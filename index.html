@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Jogo de Realidade Aumentada baseado em Stranger Things">
+    
+    <title>Stranger Things AR</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512x512.png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- A-Frame and AR.js -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen active">
+        <div class="loading-content">
+            <h1 class="stranger-title">STRANGER THINGS</h1>
+            <div class="loading-bar">
+                <div id="loading-progress" class="loading-fill"></div>
+            </div>
+            <p id="loading-text">Carregando assets...</p>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen">
+        <div class="menu-content">
+            <h1 class="stranger-title">STRANGER THINGS</h1>
+            <h2 class="subtitle">AR GAME</h2>
+            <button id="start-game" class="game-button">INICIAR JOGO</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <!-- Call Interface -->
+        <div id="call-interface" class="call-overlay hidden">
+            <div class="call-content">
+                <img id="dustin-image" src="assets/img/dustin-call.png" alt="Dustin" class="dustin-call">
+                <div class="call-controls">
+                    <button id="answer-call" class="call-button">Atender</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Arrow -->
+        <div id="navigation-arrow" class="navigation-arrow hidden">
+            <svg class="arrow-svg" viewBox="0 0 100 100">
+                <path d="M50 10 L80 50 L65 50 L65 90 L35 90 L35 50 L20 50 Z" />
+            </svg>
+        </div>
+
+        <!-- AR Scene -->
+        <a-scene
+            id="ar-scene"
+            embedded
+            arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+            vr-mode-ui="enabled: false"
+            renderer="logarithmicDepthBuffer: true;"
+            class="hidden">
+            
+            <a-camera
+                id="ar-camera"
+                gps-camera
+                rotation-reader>
+            </a-camera>
+        </a-scene>
+
+        <!-- Game UI -->
+        <div id="game-ui">
+            <!-- Mission Info -->
+            <div id="mission-info" class="mission-panel">
+                <h3 id="mission-title">Missão 1</h3>
+                <p id="mission-description">Vá até a Floresta das Trevas</p>
+            </div>
+
+            <!-- Inventory -->
+            <div id="inventory" class="inventory-panel">
+                <div class="inventory-items"></div>
+            </div>
+
+            <!-- Distance Info -->
+            <div id="distance-info" class="distance-panel">
+                <span id="distance-text">Calculando distância...</span>
+            </div>
+        </div>
+
+        <!-- Upside Down Filter -->
+        <div id="upside-down-filter" class="upside-down-filter hidden">
+            <div class="particles-overlay"></div>
+        </div>
+    </div>
+
+    <!-- Error Screen -->
+    <div id="error-screen" class="screen">
+        <div class="error-content">
+            <h2>Erro</h2>
+            <p id="error-message">Algo deu errado...</p>
+            <button id="retry-button" class="game-button">Tentar Novamente</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/location-manager.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/mission-manager.js"></script>
+    <script src="js/permission-handler.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
