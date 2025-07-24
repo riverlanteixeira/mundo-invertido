@@ -23,12 +23,15 @@
 
 
 
+
   - Implementar classe PermissionHandler para câmera, geolocalização e vibração
   - Criar interfaces de solicitação de permissões com mensagens claras
   - Desenvolver tratamento de erros para permissões negadas
   - _Requisitos: 12.1, 12.2, 12.3, 12.4, 12.5_
 
-- [ ] 4. Implementar sistema de áudio e ligações
+- [x] 4. Implementar sistema de áudio e ligações
+
+
   - Criar classe AudioManager com Web Audio API
   - Implementar interface de simulação de ligação com dustin-call.png
   - Desenvolver sistema de reprodução de áudios sequenciais

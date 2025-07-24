@@ -256,7 +256,6 @@ html, body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -267,42 +266,227 @@ html, body {
     display: none;
 }
 
+.call-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at center, rgba(255, 107, 107, 0.1) 0%, rgba(0, 0, 0, 0.95) 70%),
+        linear-gradient(45deg, rgba(255, 107, 107, 0.05) 0%, rgba(0, 0, 0, 0.95) 100%);
+    animation: callPulse 2s ease-in-out infinite;
+}
+
+@keyframes callPulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
 .call-content {
     text-align: center;
     width: 90%;
-    max-width: 300px;
+    max-width: 350px;
+    position: relative;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #ff6b6b;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 0 30px rgba(255, 107, 107, 0.3);
+}
+
+.call-header {
+    margin-bottom: 1.5rem;
+}
+
+.caller-name {
+    color: #ff6b6b;
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.call-status {
+    color: #ccc;
+    font-size: 0.9rem;
+    animation: statusBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes statusBlink {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
 }
 
 .dustin-call {
-    width: 200px;
-    height: 200px;
+    width: 180px;
+    height: 180px;
     border-radius: 50%;
     border: 4px solid #ff6b6b;
-    box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+    box-shadow: 
+        0 0 20px rgba(255, 107, 107, 0.5),
+        inset 0 0 20px rgba(255, 107, 107, 0.1);
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-bottom: 2rem;
+    margin: 1rem 0;
+    animation: callRing 2s ease-in-out infinite;
+}
+
+@keyframes callRing {
+    0%, 100% { 
+        transform: scale(1);
+        box-shadow: 
+            0 0 20px rgba(255, 107, 107, 0.5),
+            inset 0 0 20px rgba(255, 107, 107, 0.1);
+    }
+    50% { 
+        transform: scale(1.05);
+        box-shadow: 
+            0 0 30px rgba(255, 107, 107, 0.8),
+            inset 0 0 30px rgba(255, 107, 107, 0.2);
+    }
 }
 
 .dustin-call:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(255, 107, 107, 0.7);
+    transform: scale(1.1);
+    box-shadow: 0 0 40px rgba(255, 107, 107, 0.9);
+}
+
+.call-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1.5rem 0;
 }
 
 .call-button {
-    background: #4CAF50;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     border: none;
     color: white;
-    padding: 12px 24px;
+    padding: 12px 20px;
     font-size: 1rem;
     border-radius: 25px;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-weight: bold;
+    min-width: 120px;
+    justify-content: center;
 }
 
-.call-button:hover {
-    background: #45a049;
+.call-button.answer {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.call-button.answer:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40);
     transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+.call-button.decline {
+    background: linear-gradient(135deg, #f44336, #d32f2f);
+    box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+}
+
+.call-button.decline:hover {
+    background: linear-gradient(135deg, #d32f2f, #b71c1c);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+}
+
+.call-icon {
+    font-size: 1.2rem;
+}
+
+.call-info {
+    margin-top: 1rem;
+}
+
+.call-info p {
+    color: #aaa;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+/* Controles de áudio */
+.audio-controls {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #2196F3;
+    border-radius: 25px;
+    padding: 10px 15px;
+    z-index: 800;
+}
+
+.audio-controls.hidden {
+    display: none;
+}
+
+.audio-button {
+    background: none;
+    border: none;
+    color: #2196F3;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.audio-button:hover {
+    background: rgba(33, 150, 243, 0.2);
+    transform: scale(1.1);
+}
+
+.audio-button.muted {
+    color: #ff6b6b;
+}
+
+.volume-slider {
+    width: 80px;
+}
+
+.volume-slider input[type="range"] {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: #333;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.volume-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2196F3;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
+}
+
+.volume-slider input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2196F3;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
 }
 
 /* Seta de navegação */

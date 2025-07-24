@@ -132,11 +132,40 @@ class StrangerThingsApp {
     }
 
     async loadGameAssets() {
-        if (!this.serviceWorkerRegistered) {
-            console.warn('Service Worker não registrado, carregamento offline limitado');
-            return;
+        const loadingProgress = document.getElementById('loading-progress');
+        const loadingText = document.getElementById('loading-text');
+        
+        // Carregar assets via Service Worker se disponível
+        if (this.serviceWorkerRegistered) {
+            try {
+                await this.loadAssetsViaServiceWorker();
+            } catch (error) {
+                console.warn('Falha no carregamento via Service Worker, tentando método alternativo');
+            }
         }
+        
+        // Carregar áudios essenciais diretamente
+        loadingText.textContent = 'Carregando áudios...';
+        
+        if (this.game && this.game.audioManager) {
+            // Configurar listener de progresso de áudio
+            this.game.audioManager.on('audioLoadProgress', (progress) => {
+                const totalProgress = 50 + (progress.progress * 50); // 50% para outros assets, 50% para áudios
+                loadingProgress.style.width = `${totalProgress}%`;
+                loadingText.textContent = `Carregando áudios... ${progress.loaded}/${progress.total}`;
+            });
+            
+            this.game.audioManager.on('audioLoadComplete', (result) => {
+                loadingProgress.style.width = '100%';
+                loadingText.textContent = 'Todos os assets carregados!';
+            });
+            
+            // Pré-carregar áudios essenciais
+            await this.game.audioManager.preloadEssentialAudios();
+        }
+    }
 
+    async loadAssetsViaServiceWorker() {
         return new Promise((resolve, reject) => {
             const messageChannel = new MessageChannel();
             
@@ -144,7 +173,7 @@ class StrangerThingsApp {
                 const data = event.data;
                 
                 if (data.type === 'CACHE_PROGRESS') {
-                    const progress = data.progress * 100;
+                    const progress = data.progress * 50; // 50% para Service Worker assets
                     document.getElementById('loading-progress').style.width = `${progress}%`;
                     document.getElementById('loading-text').textContent = 
                         `Carregando assets... ${data.cached}/${data.total}`;
@@ -152,7 +181,6 @@ class StrangerThingsApp {
                 
                 if (data.type === 'CACHE_COMPLETE') {
                     if (data.success) {
-                        document.getElementById('loading-text').textContent = 'Todos os assets carregados!';
                         resolve();
                     } else {
                         reject(new Error('Falha ao carregar assets'));

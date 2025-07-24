@@ -92,6 +92,18 @@ class StrangerThingsGame {
         this.elements.dustinImage.addEventListener('click', () => {
             this.handleCallAnswer();
         });
+
+        // Controles de áudio
+        const muteButton = document.getElementById('mute-button');
+        const volumeSlider = document.getElementById('volume-slider');
+        
+        muteButton.addEventListener('click', () => {
+            this.toggleMute();
+        });
+        
+        volumeSlider.addEventListener('input', (e) => {
+            this.setVolume(e.target.value / 100);
+        });
         
         // Eventos de localização
         this.locationManager.on('positionUpdate', (position) => {
@@ -368,8 +380,25 @@ class StrangerThingsGame {
         this.elements.callInterface.classList.remove('hidden');
         this.elements.callInterface.classList.add('fade-in');
         
+        // Atualizar status da ligação
+        const callStatus = document.querySelector('.call-status');
+        callStatus.textContent = 'Ligando...';
+        
         // Reproduzir som de chamada se disponível
-        this.audioManager.playAudio('sounds/effects/radio-static.wav', { loop: true, volume: 0.3 });
+        this.currentCallAudio = this.audioManager.playAudio('sounds/effects/radio-static.wav', { 
+            loop: true, 
+            volume: 0.3 
+        });
+        
+        // Mostrar controles de áudio
+        this.showAudioControls();
+        
+        // Simular tempo de ligação
+        setTimeout(() => {
+            if (callStatus) {
+                callStatus.textContent = 'Chamada recebida';
+            }
+        }, 2000);
         
         Utils.log('Ligação do Dustin exibida');
     }
@@ -378,20 +407,52 @@ class StrangerThingsGame {
         Utils.log('Ligação atendida');
         
         // Parar som de chamada
-        this.audioManager.stopAll();
+        if (this.currentCallAudio) {
+            this.audioManager.stopAudio(this.currentCallAudio);
+        }
         
-        // Reproduzir áudio de introdução
-        await this.audioManager.playAudio('sounds/call/dustin-intro.wav');
+        // Atualizar status da ligação
+        const callStatus = document.querySelector('.call-status');
+        if (callStatus) {
+            callStatus.textContent = 'Conectado';
+        }
         
-        // Ocultar interface de ligação
-        this.elements.callInterface.classList.add('fade-out');
-        setTimeout(() => {
-            this.elements.callInterface.classList.add('hidden');
-            this.elements.callInterface.classList.remove('fade-out');
-        }, 500);
+        // Desabilitar botão de atender
+        this.elements.answerCall.disabled = true;
+        this.elements.answerCall.textContent = 'Conectando...';
         
-        // Iniciar primeira missão
-        this.startFirstMission();
+        try {
+            // Reproduzir áudio de introdução
+            const introAudioId = await this.audioManager.playAudio('sounds/call/dustin-intro.wav');
+            
+            // Aguardar o áudio terminar
+            await new Promise((resolve) => {
+                const onAudioEnd = (audioId) => {
+                    if (audioId === introAudioId) {
+                        this.audioManager.off('audioEnded', onAudioEnd);
+                        resolve();
+                    }
+                };
+                this.audioManager.on('audioEnded', onAudioEnd);
+            });
+            
+            // Ocultar interface de ligação com animação
+            this.elements.callInterface.classList.add('fade-out');
+            setTimeout(() => {
+                this.elements.callInterface.classList.add('hidden');
+                this.elements.callInterface.classList.remove('fade-out');
+            }, 500);
+            
+            // Aguardar um pouco antes de iniciar a primeira missão
+            await Utils.wait(1000);
+            
+            // Iniciar primeira missão
+            this.startFirstMission();
+            
+        } catch (error) {
+            Utils.log(`Erro durante ligação: ${error.message}`, 'error');
+            this.showError('Erro durante a ligação com Dustin');
+        }
     }
 
     async startFirstMission() {
@@ -684,6 +745,55 @@ class StrangerThingsGame {
     handleAudioEnded(audioId) {
         Utils.log(`Áudio finalizado: ${audioId}`);
         // Processar ações pós-áudio se necessário
+    }
+
+    // Controles de áudio
+    toggleMute() {
+        const isMuted = !this.audioManager.isSoundEnabled();
+        this.audioManager.setSoundEnabled(isMuted);
+        
+        const muteButton = document.getElementById('mute-button');
+        const icon = muteButton.querySelector('.audio-icon');
+        
+        if (isMuted) {
+            icon.textContent = '🔊';
+            muteButton.classList.remove('muted');
+        } else {
+            icon.textContent = '🔇';
+            muteButton.classList.add('muted');
+        }
+        
+        Utils.log(`Som ${isMuted ? 'habilitado' : 'desabilitado'}`);
+    }
+
+    setVolume(volume) {
+        this.audioManager.setMasterVolume(volume);
+        
+        const muteButton = document.getElementById('mute-button');
+        const icon = muteButton.querySelector('.audio-icon');
+        
+        if (volume === 0) {
+            icon.textContent = '🔇';
+            muteButton.classList.add('muted');
+        } else if (volume < 0.5) {
+            icon.textContent = '🔉';
+            muteButton.classList.remove('muted');
+        } else {
+            icon.textContent = '🔊';
+            muteButton.classList.remove('muted');
+        }
+        
+        Utils.log(`Volume definido para: ${Math.round(volume * 100)}%`);
+    }
+
+    showAudioControls() {
+        const audioControls = document.getElementById('audio-controls');
+        audioControls.classList.remove('hidden');
+    }
+
+    hideAudioControls() {
+        const audioControls = document.getElementById('audio-controls');
+        audioControls.classList.add('hidden');
     }
 
     showError(message) {

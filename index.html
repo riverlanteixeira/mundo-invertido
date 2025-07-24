@@ -49,10 +49,35 @@
         <!-- Call Interface -->
         <div id="call-interface" class="call-overlay hidden">
             <div class="call-content">
+                <div class="call-header">
+                    <h3 class="caller-name">Dustin Henderson</h3>
+                    <p class="call-status">Ligando...</p>
+                </div>
                 <img id="dustin-image" src="assets/img/dustin-call.png" alt="Dustin" class="dustin-call">
                 <div class="call-controls">
-                    <button id="answer-call" class="call-button">Atender</button>
+                    <button id="answer-call" class="call-button answer">
+                        <span class="call-icon">📞</span>
+                        Atender
+                    </button>
+                    <button id="decline-call" class="call-button decline hidden">
+                        <span class="call-icon">📵</span>
+                        Recusar
+                    </button>
                 </div>
+                <div class="call-info">
+                    <p>Toque na imagem ou no botão para atender</p>
+                </div>
+            </div>
+            <div class="call-background"></div>
+        </div>
+
+        <!-- Audio Controls -->
+        <div id="audio-controls" class="audio-controls hidden">
+            <button id="mute-button" class="audio-button">
+                <span class="audio-icon">🔊</span>
+            </button>
+            <div class="volume-slider">
+                <input type="range" id="volume-slider" min="0" max="100" value="80">
             </div>
         </div>
 
@@ -115,12 +140,12 @@
 
     <!-- Scripts -->
     <script src="js/utils.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/permission-handler.js"></script>
     <script src="js/audio-manager.js"></script>
     <script src="js/location-manager.js"></script>
     <script src="js/ar-manager.js"></script>
     <script src="js/mission-manager.js"></script>
-    <script src="js/permission-handler.js"></script>
-    <script src="js/game-state.js"></script>
     <script src="js/game.js"></script>
     <script src="js/app.js"></script>
 </body>
