@@ -32,13 +32,18 @@
 - [x] 4. Implementar sistema de áudio e ligações
 
 
+
   - Criar classe AudioManager com Web Audio API
   - Implementar interface de simulação de ligação com dustin-call.png
   - Desenvolver sistema de reprodução de áudios sequenciais
   - Criar controles de volume e pausa para áudios
   - _Requisitos: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 5. Desenvolver sistema de geolocalização e navegação
+- [x] 5. Desenvolver sistema de geolocalização e navegação
+
+
+
+
   - Implementar classe LocationManager com Geolocation API
   - Criar cálculos de distância usando fórmula de Haversine
   - Desenvolver cálculo de bearing/direção entre coordenadas

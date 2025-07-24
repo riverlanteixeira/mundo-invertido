@@ -110,8 +110,16 @@ class StrangerThingsGame {
             this.handlePositionUpdate(position);
         });
         
-        this.locationManager.on('targetReached', (target) => {
-            this.handleTargetReached(target);
+        this.locationManager.on('targetReached', (data) => {
+            this.handleTargetReached(data);
+        });
+        
+        this.locationManager.on('navigationUpdate', (navData) => {
+            this.handleNavigationUpdate(navData);
+        });
+        
+        this.locationManager.on('locationError', (error) => {
+            this.handleLocationError(error);
         });
         
         // Eventos de missão
@@ -459,14 +467,6 @@ class StrangerThingsGame {
         Utils.log('Iniciando primeira missão...');
         
         try {
-            // Solicitar permissão de localização
-            const locationGranted = await this.permissionHandler.requestLocationPermission();
-            this.state.setPermission('location', locationGranted);
-            
-            if (!locationGranted) {
-                throw new Error('Permissão de localização é necessária');
-            }
-            
             // Ativar câmera AR
             await this.arManager.startCamera();
             this.elements.arScene.classList.remove('hidden');
@@ -475,7 +475,15 @@ class StrangerThingsGame {
             await this.locationManager.startTracking();
             
             // Definir primeira missão
+            const firstMission = this.missionManager.getMission(1);
             this.missionManager.startMission(1);
+            
+            // Definir destino no LocationManager
+            this.locationManager.setTarget(
+                firstMission.location.lat,
+                firstMission.location.lng,
+                firstMission.radius
+            );
             
             // Atualizar UI
             this.updateMissionUI(1);
@@ -560,11 +568,67 @@ class StrangerThingsGame {
         this.elements.missionDescription.textContent = mission.description;
     }
 
-    handleTargetReached(mission) {
-        Utils.log(`Destino alcançado: ${mission.name}`);
+    handleTargetReached(data) {
+        Utils.log(`Destino alcançado! Distância: ${data.distance.toFixed(1)}m`);
         
-        // Ativar conteúdo AR específico da missão
-        this.activateMissionAR(mission);
+        // Ocultar seta de navegação
+        this.hideNavigationArrow();
+        
+        // Obter missão atual
+        const currentMission = this.missionManager.getCurrentMission();
+        if (currentMission) {
+            // Ativar conteúdo AR específico da missão
+            this.activateMissionAR(currentMission);
+        }
+    }
+
+    handleNavigationUpdate(navData) {
+        // Atualizar seta de navegação
+        if (navData.isNearTarget) {
+            this.hideNavigationArrow();
+        } else {
+            this.showNavigationArrowWithBearing(navData.bearing);
+        }
+        
+        // Atualizar UI de distância
+        this.updateDistanceUIWithData(navData.distance);
+    }
+
+    handleLocationError(error) {
+        Utils.log(`Erro de localização: ${error.message}`, 'error');
+        
+        // Mostrar mensagem de erro específica
+        let errorMessage = 'Erro de localização: ';
+        switch (error.code) {
+            case 1: // PERMISSION_DENIED
+                errorMessage += 'Permissão negada. Verifique as configurações do navegador.';
+                break;
+            case 2: // POSITION_UNAVAILABLE
+                errorMessage += 'Localização indisponível. Verifique se o GPS está ativado.';
+                break;
+            case 3: // TIMEOUT
+                errorMessage += 'Timeout. Tente novamente em alguns segundos.';
+                break;
+            default:
+                errorMessage += error.message;
+        }
+        
+        this.showError(errorMessage);
+    }
+
+    showNavigationArrowWithBearing(bearing) {
+        if (bearing === null) return;
+        
+        this.elements.navigationArrow.classList.remove('hidden');
+        this.elements.navigationArrow.querySelector('.arrow-svg').style.transform = 
+            `rotate(${bearing}deg)`;
+    }
+
+    updateDistanceUIWithData(distance) {
+        if (distance === null) return;
+        
+        this.elements.distanceText.textContent = 
+            `Distância: ${Utils.formatDistance(distance)}`;
     }
 
     async activateMissionAR(mission) {
@@ -705,9 +769,36 @@ class StrangerThingsGame {
         if (nextMission) {
             this.missionManager.startMission(nextMissionId);
             this.updateMissionUI(nextMissionId);
-            Utils.log(`Avançando para missão ${nextMissionId}`);
+            
+            // Definir novo destino no LocationManager
+            this.locationManager.setTarget(
+                nextMission.location.lat,
+                nextMission.location.lng,
+                nextMission.radius
+            );
+            
+            Utils.log(`Avançando para missão ${nextMissionId}: ${nextMission.name}`);
         } else {
+            // Limpar destino quando não há mais missões
+            this.locationManager.clearTarget();
             Utils.log('Todas as missões completadas');
+        }
+    }
+
+    handleMissionStart(missionId) {
+        Utils.log(`Iniciando missão ${missionId}`);
+        
+        const mission = this.missionManager.getMission(missionId);
+        if (mission) {
+            // Configurar destino de navegação
+            this.locationManager.setTarget(
+                mission.location.lat,
+                mission.location.lng,
+                mission.radius
+            );
+            
+            // Atualizar UI
+            this.updateMissionUI(missionId);
         }
     }
 
