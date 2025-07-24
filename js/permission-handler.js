@@ -329,10 +329,12 @@ class PermissionHandler {
     }
 
     // Verificar suporte geral do dispositivo
-    checkDeviceSupport() {
+    async checkDeviceSupport() {
         const support = Utils.checkSupport();
         const issues = [];
+        const warnings = [];
 
+        // Verificações críticas
         if (!support.geolocation) {
             issues.push('Geolocalização não suportada');
         }
@@ -345,43 +347,102 @@ class PermissionHandler {
             issues.push('WebGL não suportado (necessário para AR)');
         }
 
+        // Verificações não críticas
         if (!support.serviceWorker) {
-            issues.push('Service Worker não suportado (funcionalidade offline limitada)');
+            warnings.push('Service Worker não suportado (funcionalidade offline limitada)');
         }
 
-        if (issues.length > 0) {
-            Utils.log(`Problemas de suporte detectados: ${issues.join(', ')}`, 'warn');
-            
-            // Mostrar aviso se houver problemas críticos
-            const criticalIssues = issues.filter(issue => 
-                issue.includes('Geolocalização') || 
-                issue.includes('Câmera') || 
-                issue.includes('WebGL')
-            );
+        if (!support.vibration) {
+            warnings.push('Vibração não suportada');
+        }
 
-            if (criticalIssues.length > 0) {
-                this.showDeviceCompatibilityWarning(criticalIssues);
-                return false;
-            }
+        if (!support.deviceOrientation) {
+            warnings.push('Orientação do dispositivo não suportada');
+        }
+
+        // Verificar se está em HTTPS (necessário para muitas APIs)
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+            issues.push('HTTPS necessário para funcionalidades de câmera e localização');
+        }
+
+        // Verificar orientação
+        if (!this.checkOrientation()) {
+            warnings.push('Recomendado usar em orientação retrato');
+        }
+
+        // Log dos problemas encontrados
+        if (issues.length > 0) {
+            Utils.log(`Problemas críticos detectados: ${issues.join(', ')}`, 'error');
+        }
+
+        if (warnings.length > 0) {
+            Utils.log(`Avisos detectados: ${warnings.join(', ')}`, 'warn');
+        }
+
+        // Mostrar modal se houver problemas críticos
+        if (issues.length > 0) {
+            this.showDeviceCompatibilityWarning(issues, true);
+            return false;
+        }
+
+        // Mostrar avisos se houver
+        if (warnings.length > 0) {
+            this.showDeviceCompatibilityWarning(warnings, false);
         }
 
         return true;
     }
 
+    // Verificar permissões já concedidas
+    async checkExistingPermissions() {
+        const results = {
+            camera: false,
+            location: false,
+            vibration: false
+        };
+
+        // Verificar permissão de câmera via Permissions API (se disponível)
+        if ('permissions' in navigator) {
+            try {
+                const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+                results.camera = cameraPermission.state === 'granted';
+                
+                const locationPermission = await navigator.permissions.query({ name: 'geolocation' });
+                results.location = locationPermission.state === 'granted';
+            } catch (error) {
+                Utils.log('Permissions API não suportada completamente', 'warn');
+            }
+        }
+
+        // Verificar vibração
+        results.vibration = 'vibrate' in navigator;
+
+        // Atualizar estado interno
+        Object.assign(this.permissions, results);
+
+        Utils.log(`Permissões existentes: ${JSON.stringify(results)}`);
+        return results;
+    }
+
     // Mostrar aviso de compatibilidade
-    showDeviceCompatibilityWarning(issues) {
-        const message = `Seu dispositivo pode não ser totalmente compatível com este jogo:\n\n${issues.join('\n')}`;
+    showDeviceCompatibilityWarning(issues, isCritical = false) {
+        const title = isCritical ? 'Erro de Compatibilidade' : 'Aviso de Compatibilidade';
+        const prefix = isCritical ? 'Seu dispositivo não é compatível com este jogo:' : 'Seu dispositivo pode ter limitações:';
+        const message = `${prefix}\n\n${issues.join('\n')}`;
         
-        this.showPermissionModal(
-            'Compatibilidade do Dispositivo',
-            message,
-            [
-                '1. Tente usar um navegador mais recente (Chrome, Firefox, Safari)',
-                '2. Certifique-se que seu dispositivo suporta WebGL',
-                '3. Verifique se as permissões estão habilitadas',
-                '4. Tente em outro dispositivo se os problemas persistirem'
-            ]
-        );
+        const instructions = isCritical ? [
+            '1. Tente usar um navegador mais recente (Chrome, Firefox, Safari)',
+            '2. Certifique-se que seu dispositivo suporta WebGL',
+            '3. Verifique se está acessando via HTTPS',
+            '4. Tente em outro dispositivo compatível'
+        ] : [
+            '1. Algumas funcionalidades podem não funcionar perfeitamente',
+            '2. Tente usar um navegador mais recente se possível',
+            '3. O jogo ainda deve funcionar com funcionalidade reduzida',
+            '4. Continue jogando normalmente'
+        ];
+        
+        this.showPermissionModal(title, message, instructions);
     }
 
     // Solicitar todas as permissões necessárias
@@ -405,9 +466,195 @@ class PermissionHandler {
         return results;
     }
 
+    // Monitorar mudanças de permissões
+    async monitorPermissionChanges() {
+        if ('permissions' in navigator) {
+            try {
+                // Monitorar câmera
+                const cameraPermission = await navigator.permissions.query({ name: 'camera' });
+                cameraPermission.addEventListener('change', () => {
+                    const granted = cameraPermission.state === 'granted';
+                    this.permissions.camera = granted;
+                    Utils.log(`Permissão de câmera alterada: ${granted}`);
+                    this.onPermissionChange('camera', granted);
+                });
+
+                // Monitorar localização
+                const locationPermission = await navigator.permissions.query({ name: 'geolocation' });
+                locationPermission.addEventListener('change', () => {
+                    const granted = locationPermission.state === 'granted';
+                    this.permissions.location = granted;
+                    Utils.log(`Permissão de localização alterada: ${granted}`);
+                    this.onPermissionChange('location', granted);
+                });
+
+                Utils.log('Monitoramento de permissões ativado');
+            } catch (error) {
+                Utils.log('Não foi possível monitorar mudanças de permissões', 'warn');
+            }
+        }
+    }
+
+    // Callback para mudanças de permissão
+    onPermissionChange(type, granted) {
+        // Notificar callbacks registrados
+        if (this.permissionCallbacks.has(type)) {
+            const callbacks = this.permissionCallbacks.get(type);
+            callbacks.forEach(callback => callback(granted));
+        }
+
+        // Se uma permissão crítica foi revogada, pausar o jogo
+        if (!granted && (type === 'camera' || type === 'location')) {
+            this.handleCriticalPermissionRevoked(type);
+        }
+    }
+
+    // Registrar callback para mudanças de permissão
+    onPermissionChanged(type, callback) {
+        if (!this.permissionCallbacks.has(type)) {
+            this.permissionCallbacks.set(type, []);
+        }
+        this.permissionCallbacks.get(type).push(callback);
+    }
+
+    // Remover callback de mudanças de permissão
+    removePermissionCallback(type, callback) {
+        if (this.permissionCallbacks.has(type)) {
+            const callbacks = this.permissionCallbacks.get(type);
+            const index = callbacks.indexOf(callback);
+            if (index > -1) {
+                callbacks.splice(index, 1);
+            }
+        }
+    }
+
+    // Lidar com revogação de permissão crítica
+    handleCriticalPermissionRevoked(type) {
+        const messages = {
+            camera: 'A permissão de câmera foi revogada. O jogo será pausado.',
+            location: 'A permissão de localização foi revogada. O jogo será pausado.'
+        };
+
+        Utils.log(`Permissão crítica revogada: ${type}`, 'error');
+        
+        // Mostrar modal informativo
+        this.showPermissionRevokedModal(type, messages[type]);
+    }
+
+    // Modal para permissão revogada
+    showPermissionRevokedModal(type, message) {
+        const modal = document.createElement('div');
+        modal.id = 'permission-revoked-modal';
+        modal.className = 'permission-modal';
+        modal.innerHTML = `
+            <div class="permission-modal-content">
+                <h3>⚠️ Permissão Revogada</h3>
+                <p>${message}</p>
+                <div class="permission-instructions">
+                    <h4>Para continuar jogando:</h4>
+                    <ul>
+                        <li>1. Recarregue a página</li>
+                        <li>2. Conceda a permissão quando solicitado</li>
+                        <li>3. Ou verifique as configurações do navegador</li>
+                    </ul>
+                </div>
+                <div class="permission-modal-buttons">
+                    <button class="permission-button retry-button">Recarregar Página</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Event listener
+        modal.querySelector('.retry-button').addEventListener('click', () => {
+            location.reload();
+        });
+    }
+
+    // Verificar se o dispositivo está em modo desenvolvedor/debug
+    isDebugMode() {
+        return location.hostname === 'localhost' || 
+               location.hostname === '127.0.0.1' || 
+               location.protocol === 'file:';
+    }
+
+    // Simular permissões para desenvolvimento
+    enableDebugMode() {
+        if (this.isDebugMode()) {
+            Utils.log('Modo debug ativado - simulando permissões', 'warn');
+            this.permissions.camera = true;
+            this.permissions.location = true;
+            this.permissions.vibration = true;
+            return true;
+        }
+        return false;
+    }
+
+    // Obter informações detalhadas do dispositivo
+    getDeviceInfo() {
+        return {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            cookieEnabled: navigator.cookieEnabled,
+            onLine: navigator.onLine,
+            screen: {
+                width: screen.width,
+                height: screen.height,
+                orientation: screen.orientation?.type || 'unknown'
+            },
+            viewport: {
+                width: window.innerWidth,
+                height: window.innerHeight
+            },
+            support: Utils.checkSupport(),
+            permissions: this.getPermissionStatus(),
+            isPortrait: this.checkOrientation(),
+            isHTTPS: location.protocol === 'https:',
+            isDebug: this.isDebugMode()
+        };
+    }
+
+    // Gerar relatório de compatibilidade
+    generateCompatibilityReport() {
+        const deviceInfo = this.getDeviceInfo();
+        const issues = [];
+        const warnings = [];
+
+        // Analisar compatibilidade
+        if (!deviceInfo.support.camera) issues.push('Câmera não suportada');
+        if (!deviceInfo.support.geolocation) issues.push('Geolocalização não suportada');
+        if (!deviceInfo.support.webgl) issues.push('WebGL não suportado');
+        if (!deviceInfo.isHTTPS && !deviceInfo.isDebug) issues.push('HTTPS necessário');
+
+        if (!deviceInfo.support.serviceWorker) warnings.push('Service Worker não suportado');
+        if (!deviceInfo.support.vibration) warnings.push('Vibração não suportada');
+        if (!deviceInfo.isPortrait) warnings.push('Orientação não ideal');
+
+        return {
+            deviceInfo,
+            issues,
+            warnings,
+            isCompatible: issues.length === 0,
+            score: Math.max(0, 100 - (issues.length * 25) - (warnings.length * 10))
+        };
+    }
+
     // Obter status de todas as permissões
     getPermissionStatus() {
         return { ...this.permissions };
+    }
+
+    // Limpar recursos
+    cleanup() {
+        this.permissionCallbacks.clear();
+        
+        // Remover modais se existirem
+        const modals = document.querySelectorAll('#permission-modal, #permission-revoked-modal');
+        modals.forEach(modal => modal.remove());
+        
+        Utils.log('PermissionHandler limpo');
     }
 }
 

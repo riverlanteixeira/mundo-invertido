@@ -281,6 +281,15 @@ class StrangerThingsGame {
         Utils.log('Iniciando sequência de introdução...');
         
         try {
+            // Gerar relatório de compatibilidade
+            const compatibilityReport = this.permissionHandler.generateCompatibilityReport();
+            Utils.log(`Relatório de compatibilidade: Score ${compatibilityReport.score}/100`);
+            
+            // Salvar relatório no estado para debug
+            if (this.state.isDebugMode()) {
+                Utils.saveToStorage('compatibility-report', compatibilityReport);
+            }
+            
             // Marcar jogo como iniciado
             this.state.startGame();
             
@@ -299,15 +308,60 @@ class StrangerThingsGame {
     }
 
     async requestInitialPermissions() {
-        // Solicitar permissão de câmera
-        const cameraGranted = await this.permissionHandler.requestCameraPermission();
-        this.state.setPermission('camera', cameraGranted);
+        // Verificar suporte do dispositivo primeiro
+        const isSupported = await this.permissionHandler.checkDeviceSupport();
+        if (!isSupported) {
+            throw new Error('Dispositivo não compatível');
+        }
+
+        // Verificar permissões existentes
+        await this.permissionHandler.checkExistingPermissions();
+
+        // Iniciar monitoramento de mudanças
+        await this.permissionHandler.monitorPermissionChanges();
+
+        // Registrar callbacks para mudanças de permissão
+        this.permissionHandler.onPermissionChanged('camera', (granted) => {
+            this.state.setPermission('camera', granted);
+            if (!granted) {
+                this.handlePermissionLost('camera');
+            }
+        });
+
+        this.permissionHandler.onPermissionChanged('location', (granted) => {
+            this.state.setPermission('location', granted);
+            if (!granted) {
+                this.handlePermissionLost('location');
+            }
+        });
+
+        // Solicitar todas as permissões necessárias
+        const permissions = await this.permissionHandler.requestAllPermissions();
         
-        if (!cameraGranted) {
-            throw new Error('Permissão de câmera é necessária para jogar');
+        // Atualizar estado do jogo
+        Object.keys(permissions).forEach(type => {
+            this.state.setPermission(type, permissions[type]);
+        });
+
+        // Verificar se permissões críticas foram concedidas
+        if (!permissions.camera || !permissions.location) {
+            throw new Error('Permissões necessárias não foram concedidas');
         }
         
-        Utils.log('Permissões iniciais obtidas');
+        Utils.log('Permissões iniciais obtidas com sucesso');
+    }
+
+    handlePermissionLost(type) {
+        Utils.log(`Permissão perdida: ${type}`, 'warn');
+        
+        // Pausar funcionalidades relacionadas
+        if (type === 'camera') {
+            this.arManager?.stopCamera();
+        }
+        
+        if (type === 'location') {
+            this.locationManager?.stopTracking();
+        }
     }
 
     showDustinCall() {
@@ -638,12 +692,174 @@ class StrangerThingsGame {
         
         errorMessage.textContent = message;
         
+        // Adicionar botão de diagnóstico em modo debug
+        if (this.state.isDebugMode()) {
+            this.addDiagnosticButton(errorScreen);
+        }
+        
         // Ocultar outras telas
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
         });
         
         errorScreen.classList.add('active');
+    }
+
+    addDiagnosticButton(errorScreen) {
+        // Verificar se já existe
+        if (errorScreen.querySelector('.diagnostic-button')) return;
+        
+        const diagnosticButton = document.createElement('button');
+        diagnosticButton.className = 'game-button diagnostic-button';
+        diagnosticButton.textContent = 'Diagnóstico';
+        diagnosticButton.style.marginTop = '1rem';
+        diagnosticButton.style.backgroundColor = '#2196F3';
+        
+        diagnosticButton.addEventListener('click', () => {
+            this.showDiagnosticModal();
+        });
+        
+        const errorContent = errorScreen.querySelector('.error-content');
+        errorContent.appendChild(diagnosticButton);
+    }
+
+    showDiagnosticModal() {
+        const report = this.permissionHandler.generateCompatibilityReport();
+        const permissions = this.permissionHandler.getPermissionStatus();
+        const gameState = this.state.exportState();
+        
+        const modal = document.createElement('div');
+        modal.className = 'permission-modal';
+        modal.innerHTML = `
+            <div class="permission-modal-content" style="max-width: 90%; width: 600px; max-height: 80vh; overflow-y: auto;">
+                <h3>🔧 Diagnóstico do Sistema</h3>
+                
+                <div style="text-align: left; margin: 1rem 0;">
+                    <h4>📊 Score de Compatibilidade: ${report.score}/100</h4>
+                    <div style="background: #333; padding: 1rem; border-radius: 5px; margin: 0.5rem 0;">
+                        <strong>Dispositivo:</strong> ${report.deviceInfo.platform}<br>
+                        <strong>Navegador:</strong> ${report.deviceInfo.userAgent.split(' ').pop()}<br>
+                        <strong>Resolução:</strong> ${report.deviceInfo.viewport.width}x${report.deviceInfo.viewport.height}<br>
+                        <strong>Orientação:</strong> ${report.deviceInfo.screen.orientation}<br>
+                        <strong>HTTPS:</strong> ${report.deviceInfo.isHTTPS ? '✅' : '❌'}<br>
+                        <strong>Online:</strong> ${report.deviceInfo.onLine ? '✅' : '❌'}
+                    </div>
+                    
+                    <h4>🔐 Permissões:</h4>
+                    <div style="background: #333; padding: 1rem; border-radius: 5px; margin: 0.5rem 0;">
+                        <strong>Câmera:</strong> ${permissions.camera ? '✅' : '❌'}<br>
+                        <strong>Localização:</strong> ${permissions.location ? '✅' : '❌'}<br>
+                        <strong>Vibração:</strong> ${permissions.vibration ? '✅' : '❌'}
+                    </div>
+                    
+                    <h4>🛠️ Suporte de APIs:</h4>
+                    <div style="background: #333; padding: 1rem; border-radius: 5px; margin: 0.5rem 0;">
+                        <strong>WebGL:</strong> ${report.deviceInfo.support.webgl ? '✅' : '❌'}<br>
+                        <strong>Service Worker:</strong> ${report.deviceInfo.support.serviceWorker ? '✅' : '❌'}<br>
+                        <strong>Device Orientation:</strong> ${report.deviceInfo.support.deviceOrientation ? '✅' : '❌'}
+                    </div>
+                    
+                    ${report.issues.length > 0 ? `
+                    <h4>❌ Problemas Críticos:</h4>
+                    <ul style="color: #ff6b6b; margin: 0.5rem 0;">
+                        ${report.issues.map(issue => `<li>${issue}</li>`).join('')}
+                    </ul>
+                    ` : ''}
+                    
+                    ${report.warnings.length > 0 ? `
+                    <h4>⚠️ Avisos:</h4>
+                    <ul style="color: #ffa726; margin: 0.5rem 0;">
+                        ${report.warnings.map(warning => `<li>${warning}</li>`).join('')}
+                    </ul>
+                    ` : ''}
+                </div>
+                
+                <div class="permission-modal-buttons">
+                    <button class="permission-button" id="copy-report">Copiar Relatório</button>
+                    <button class="permission-button" id="export-logs">Exportar Logs</button>
+                    <button class="permission-button close-button">Fechar</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Event listeners
+        modal.querySelector('#copy-report').addEventListener('click', () => {
+            const reportText = JSON.stringify({
+                compatibility: report,
+                permissions,
+                timestamp: new Date().toISOString()
+            }, null, 2);
+            
+            navigator.clipboard.writeText(reportText).then(() => {
+                alert('Relatório copiado para a área de transferência!');
+            });
+        });
+        
+        modal.querySelector('#export-logs').addEventListener('click', () => {
+            const logs = {
+                gameState: JSON.parse(gameState),
+                compatibility: report,
+                permissions,
+                localStorage: this.exportLocalStorage(),
+                timestamp: new Date().toISOString()
+            };
+            
+            this.downloadJSON(logs, 'stranger-things-ar-logs.json');
+        });
+        
+        modal.querySelector('.close-button').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+    }
+
+    exportLocalStorage() {
+        const storage = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('stranger-things-ar')) {
+                storage[key] = localStorage.getItem(key);
+            }
+        }
+        return storage;
+    }
+
+    downloadJSON(data, filename) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Cleanup quando o jogo é destruído
+    cleanup() {
+        if (this.permissionHandler) {
+            this.permissionHandler.cleanup();
+        }
+        
+        if (this.audioManager) {
+            this.audioManager.cleanup?.();
+        }
+        
+        if (this.locationManager) {
+            this.locationManager.cleanup?.();
+        }
+        
+        if (this.arManager) {
+            this.arManager.cleanup?.();
+        }
+        
+        Utils.log('Jogo limpo');
     }
 }
 

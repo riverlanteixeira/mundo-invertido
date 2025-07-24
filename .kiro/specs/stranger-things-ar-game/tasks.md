@@ -19,7 +19,8 @@
   - Criar indicador de progresso de carregamento
   - _Requisitos: 1.1, 1.2, 1.4, 1.5_
 
-- [ ] 3. Desenvolver sistema de gerenciamento de permissões
+- [x] 3. Desenvolver sistema de gerenciamento de permissões
+
 
 
   - Implementar classe PermissionHandler para câmera, geolocalização e vibração
