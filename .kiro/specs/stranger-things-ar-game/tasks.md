@@ -44,13 +44,18 @@
 
 
 
+
   - Implementar classe LocationManager com Geolocation API
   - Criar cálculos de distância usando fórmula de Haversine
   - Desenvolver cálculo de bearing/direção entre coordenadas
   - Implementar detecção de proximidade (20 metros) com vibração
   - _Requisitos: 3.1, 3.2, 3.4, 3.5, 3.6_
 
-- [ ] 6. Criar sistema de seta direcional em CSS/SVG
+- [x] 6. Criar sistema de seta direcional em CSS/SVG
+
+
+
+
   - Implementar seta direcional usando SVG sem imagens externas
   - Desenvolver animações CSS para rotação suave da seta
   - Criar sistema de atualização em tempo real da direção

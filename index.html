@@ -83,9 +83,43 @@
 
         <!-- Navigation Arrow -->
         <div id="navigation-arrow" class="navigation-arrow hidden">
-            <svg class="arrow-svg" viewBox="0 0 100 100">
-                <path d="M50 10 L80 50 L65 50 L65 90 L35 90 L35 50 L20 50 Z" />
-            </svg>
+            <div class="arrow-container">
+                <svg class="arrow-svg" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#ff8e8e;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="arrowGlow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge> 
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <path class="arrow-path" d="M50 5 L85 45 L65 45 L65 85 L35 85 L35 45 L15 45 Z" 
+                          fill="url(#arrowGradient)" 
+                          filter="url(#arrowGlow)" />
+                </svg>
+                <div class="arrow-pulse"></div>
+                
+                <!-- Indicador de distância -->
+                <div class="distance-indicator">
+                    <span id="arrow-distance">Calculando...</span>
+                </div>
+                
+                <!-- Indicador de precisão GPS -->
+                <div class="accuracy-indicator">
+                    <div class="accuracy-bars">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- AR Scene -->

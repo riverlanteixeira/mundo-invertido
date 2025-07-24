@@ -537,14 +537,104 @@ class StrangerThingsGame {
 
     showNavigationArrow(from, to) {
         const bearing = Utils.calculateBearing(from.lat, from.lng, to.lat, to.lng);
+        const distance = Utils.calculateDistance(from.lat, from.lng, to.lat, to.lng);
         
-        this.elements.navigationArrow.classList.remove('hidden');
-        this.elements.navigationArrow.querySelector('.arrow-svg').style.transform = 
-            `rotate(${bearing}deg)`;
+        this.updateNavigationArrow(bearing, distance, true);
     }
 
     hideNavigationArrow() {
-        this.elements.navigationArrow.classList.add('hidden');
+        const arrow = this.elements.navigationArrow;
+        
+        // Adicionar animação de saída
+        arrow.classList.add('hide');
+        arrow.classList.remove('show', 'near', 'far', 'moving');
+        
+        setTimeout(() => {
+            arrow.classList.add('hidden');
+            arrow.classList.remove('hide');
+        }, 400);
+    }
+
+    updateNavigationArrow(bearing, distance, show = false) {
+        const arrow = this.elements.navigationArrow;
+        const arrowSvg = arrow.querySelector('.arrow-svg');
+        const distanceIndicator = document.getElementById('arrow-distance');
+        const accuracyBars = arrow.querySelector('.accuracy-bars');
+        
+        if (show && arrow.classList.contains('hidden')) {
+            // Mostrar seta com animação de entrada
+            arrow.classList.remove('hidden');
+            arrow.classList.add('show');
+            
+            setTimeout(() => {
+                arrow.classList.remove('show');
+            }, 600);
+        }
+        
+        // Atualizar rotação da seta
+        if (bearing !== null) {
+            arrowSvg.style.transform = `rotate(${bearing}deg)`;
+        }
+        
+        // Atualizar indicador de distância
+        if (distance !== null) {
+            distanceIndicator.textContent = Utils.formatDistance(distance);
+            
+            // Aplicar classes baseadas na distância
+            arrow.classList.remove('near', 'far');
+            
+            if (distance <= 50) {
+                arrow.classList.add('near');
+            } else if (distance >= 200) {
+                arrow.classList.add('far');
+            }
+        }
+        
+        // Atualizar indicador de precisão baseado na precisão do GPS
+        if (this.locationManager.currentPosition && accuracyBars) {
+            const accuracy = this.locationManager.currentPosition.accuracy;
+            accuracyBars.classList.remove('low', 'medium', 'high');
+            
+            if (accuracy <= 10) {
+                accuracyBars.classList.add('high');
+            } else if (accuracy <= 30) {
+                accuracyBars.classList.add('medium');
+            } else {
+                accuracyBars.classList.add('low');
+            }
+        }
+        
+        // Adicionar classe de movimento se o jogador estiver se movendo
+        const isMoving = this.locationManager.isMoving && this.locationManager.isMoving();
+        if (isMoving) {
+            arrow.classList.add('moving');
+        } else {
+            arrow.classList.remove('moving');
+        }
+    }
+
+    // Animação especial quando destino é alcançado
+    showDestinationReached() {
+        const arrow = this.elements.navigationArrow;
+        
+        // Adicionar animação de destino alcançado
+        arrow.classList.add('destination-reached');
+        
+        setTimeout(() => {
+            arrow.classList.add('hidden');
+            arrow.classList.remove('destination-reached', 'near', 'far', 'moving');
+        }, 1000);
+    }
+
+    // Animação de erro na navegação
+    showNavigationError() {
+        const arrow = this.elements.navigationArrow;
+        
+        arrow.classList.add('error');
+        
+        setTimeout(() => {
+            arrow.classList.remove('error');
+        }, 1500);
     }
 
     updateDistanceUI(position) {
@@ -571,8 +661,8 @@ class StrangerThingsGame {
     handleTargetReached(data) {
         Utils.log(`Destino alcançado! Distância: ${data.distance.toFixed(1)}m`);
         
-        // Ocultar seta de navegação
-        this.hideNavigationArrow();
+        // Mostrar animação de destino alcançado
+        this.showDestinationReached();
         
         // Obter missão atual
         const currentMission = this.missionManager.getCurrentMission();
@@ -616,12 +706,11 @@ class StrangerThingsGame {
         this.showError(errorMessage);
     }
 
-    showNavigationArrowWithBearing(bearing) {
+    showNavigationArrowWithBearing(bearing, distance = null) {
         if (bearing === null) return;
         
-        this.elements.navigationArrow.classList.remove('hidden');
-        this.elements.navigationArrow.querySelector('.arrow-svg').style.transform = 
-            `rotate(${bearing}deg)`;
+        // Usar o método updateNavigationArrow para consistência
+        this.updateNavigationArrow(bearing, distance, true);
     }
 
     updateDistanceUIWithData(distance) {
