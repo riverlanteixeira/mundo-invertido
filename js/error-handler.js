@@ -1439,4 +1439,228 @@ class ErrorHandler {
 }
 
 // Exportar para uso global
-window.ErrorHandler = ErrorHandler;
+window.ErrorHandler = ErrorHandler;    // 
+Limpar recursos
+    cleanup() {
+        this.errorLog = [];
+        this.errorCounts.clear();
+        this.errorCallbacks.clear();
+        
+        // Remover elementos de interface
+        const elements = [
+            '#error-modal',
+            '#manual-location-interface',
+            '#no-ar-interface',
+            '#degraded-mode-indicator'
+        ];
+        
+        elements.forEach(selector => {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.remove();
+            }
+        });
+        
+        Utils.log('ErrorHandler limpo');
+    }
+
+    // Métodos de estilo (implementação simplificada)
+    addErrorModalStyles() {
+        if (document.getElementById('error-modal-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'error-modal-styles';
+        style.textContent = `
+            .error-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            }
+            .error-modal-content {
+                background: #fff;
+                padding: 2rem;
+                border-radius: 10px;
+                max-width: 400px;
+                text-align: center;
+            }
+            .error-modal-button {
+                padding: 10px 20px;
+                margin: 5px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+            .error-modal-button.primary {
+                background: #007bff;
+                color: white;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    addManualLocationStyles() {
+        if (document.getElementById('manual-location-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'manual-location-styles';
+        style.textContent = `
+            .manual-location-interface {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10001;
+            }
+            .manual-location-content {
+                background: #fff;
+                padding: 2rem;
+                border-radius: 10px;
+                max-width: 500px;
+                text-align: center;
+            }
+            .location-option {
+                display: block;
+                width: 100%;
+                padding: 15px;
+                margin: 10px 0;
+                border: 2px solid #007bff;
+                background: white;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+            }
+            .location-option:hover {
+                background: #007bff;
+                color: white;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    addNoARStyles() {
+        if (document.getElementById('no-ar-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'no-ar-styles';
+        style.textContent = `
+            .no-ar-interface {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 2rem;
+                z-index: 1000;
+            }
+            .mission-button {
+                padding: 15px 30px;
+                margin: 10px;
+                border: 2px solid #fff;
+                background: transparent;
+                color: white;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+            }
+            .mission-button:hover {
+                background: white;
+                color: black;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    addDegradedModeStyles() {
+        if (document.getElementById('degraded-mode-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'degraded-mode-styles';
+        style.textContent = `
+            .degraded-mode-indicator {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: #ffc107;
+                color: black;
+                padding: 10px;
+                border-radius: 5px;
+                z-index: 9999;
+                cursor: pointer;
+            }
+            .degraded-details {
+                display: none;
+                margin-top: 10px;
+                padding: 10px;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                border-radius: 5px;
+            }
+            .degraded-mode-indicator.expanded .degraded-details {
+                display: block;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    addDegradedNotificationStyles() {
+        if (document.getElementById('degraded-notification-styles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'degraded-notification-styles';
+        style.textContent = `
+            .degraded-notification {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                background: #ffc107;
+                color: black;
+                padding: 1rem;
+                border-radius: 10px;
+                z-index: 10000;
+                text-align: center;
+            }
+            .degraded-notification-close {
+                background: black;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-top: 10px;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    showPermissionInstructions() {
+        const modal = this.createErrorModal({
+            title: '🔧 Verificar Permissões',
+            message: 'Verifique se as permissões de câmera e localização estão habilitadas nas configurações do navegador.',
+            type: 'permission_instructions',
+            actions: [
+                {
+                    text: 'Entendi',
+                    action: () => {},
+                    primary: true
+                }
+            ]
+        });
+        
+        document.body.appendChild(modal);
+    }
+}

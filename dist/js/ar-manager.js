@@ -1445,14 +1445,6 @@ class ARManager {
 
         Utils.log('Interface de combate ocultada');
     }
-            
-            Utils.log(`Combate iniciado contra: ${arContent.enemy}`);
-            
-        } catch (error) {
-            Utils.log(`Erro ao iniciar combate: ${error.message}`, 'error');
-            throw error;
-        }
-    }
 
     createCombatInterface() {
         // Remover interface existente se houver

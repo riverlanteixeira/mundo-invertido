@@ -1346,19 +1346,18 @@ class StrangerThingsGame {
         // Este método é mantido para compatibilidade
         if (this.inventoryManager) {
             this.inventoryManager.updateUI();
+        } else {
+            // Fallback se InventoryManager não estiver disponível
+            const inventory = this.state.getInventory();
+            this.elements.inventoryItems.innerHTML = '';
+            
+            inventory.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'inventory-item';
+                itemElement.style.backgroundImage = `url(assets/img/${item}.png)`;
+                this.elements.inventoryItems.appendChild(itemElement);
+            });
         }
-    }
-
-    updateInventoryUI() {
-        const inventory = this.state.getInventory();
-        this.elements.inventoryItems.innerHTML = '';
-        
-        inventory.forEach(item => {
-            const itemElement = document.createElement('div');
-            itemElement.className = 'inventory-item';
-            itemElement.style.backgroundImage = `url(assets/img/${item}.png)`;
-            this.elements.inventoryItems.appendChild(itemElement);
-        });
     }
 
     async handleMissionComplete(missionId) {
