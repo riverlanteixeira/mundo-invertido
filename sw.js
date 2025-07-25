@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stranger-things-ar-v1';
+const CACHE_NAME = 'stranger-things-ar-v2';
 const CACHE_VERSION = '1.0.0';
 
 // Assets essenciais para cache
@@ -9,6 +9,7 @@ const ESSENTIAL_ASSETS = [
   './css/style.css',
   './fonts/stranger-things.ttf',
   './js/app.js',
+  './js/error-handler.js',
   './js/game.js',
   './js/game-state.js',
   './js/utils.js',
@@ -16,7 +17,9 @@ const ESSENTIAL_ASSETS = [
   './js/location-manager.js',
   './js/ar-manager.js',
   './js/mission-manager.js',
-  './js/permission-handler.js'
+  './js/permission-handler.js',
+  './js/inventory-manager.js',
+  './js/upside-down-manager.js'
 ];
 
 // Assets de mídia para cache
