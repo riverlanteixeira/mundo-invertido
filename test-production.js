@@ -27,6 +27,7 @@ const essentialFiles = [
   'sw.js',
   'css/style.css',
   'js/app.js',
+  'js/error-handler.js',
   'js/game.js',
   'js/game-state.js',
   'js/utils.js',
@@ -34,7 +35,9 @@ const essentialFiles = [
   'js/location-manager.js',
   'js/ar-manager.js',
   'js/mission-manager.js',
-  'js/permission-handler.js'
+  'js/permission-handler.js',
+  'js/inventory-manager.js',
+  'js/upside-down-manager.js'
 ];
 
 // Verificar arquivos essenciais
@@ -96,7 +99,7 @@ if (fs.existsSync(swPath)) {
   const swContent = fs.readFileSync(swPath, 'utf8');
   
   // Verificar se tem cache name único (cache busting)
-  if (swContent.includes('stranger-things-ar-v1-')) {
+  if (swContent.includes('stranger-things-ar-v2-')) {
     console.log('✅ Service Worker has cache busting');
   } else {
     warnings.push('⚠️  Service Worker should have cache busting for production');

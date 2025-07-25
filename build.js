@@ -114,8 +114,8 @@ if (fs.existsSync(swPath)) {
   // Update cache name with timestamp for cache busting
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   swContent = swContent.replace(
-    "const CACHE_NAME = 'stranger-things-ar-v1';",
-    `const CACHE_NAME = 'stranger-things-ar-v1-${timestamp}';`
+    "const CACHE_NAME = 'stranger-things-ar-v2';",
+    `const CACHE_NAME = 'stranger-things-ar-v2-${timestamp}';`
   );
   
   fs.writeFileSync(swPath, swContent);
