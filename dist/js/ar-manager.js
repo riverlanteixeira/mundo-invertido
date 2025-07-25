@@ -1444,15 +1444,7 @@ class ARManager {
         }
 
         Utils.log('Interface de combate ocultada');
-    }       // Adicionar à câmera
-            this.camera.appendChild(enemyModel);
-            this.arState.activeObjects.set('combat-enemy', enemyModel);
-            
-            // Criar interface de combate
-            this.createCombatInterface();
-            
-            // Emitir evento de início do combate
-            this.emit('combatStarted', arContent.enemy);
+    }
             
             Utils.log(`Combate iniciado contra: ${arContent.enemy}`);
             

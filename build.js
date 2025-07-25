@@ -63,11 +63,25 @@ const createPlaceholderIcon = (size) => {
 </svg>`;
 };
 
-// Generate placeholder icons
-fs.writeFileSync(path.join(iconsDir, 'icon-192x192.svg'), createPlaceholderIcon(192));
-fs.writeFileSync(path.join(iconsDir, 'icon-512x512.svg'), createPlaceholderIcon(512));
+// Generate placeholder icons as PNG (base64 encoded)
+const createPNGIcon = (size) => {
+  // Criar um canvas virtual e gerar PNG base64
+  const canvas = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="${size}" height="${size}" fill="#000000"/>
+    <text x="50%" y="50%" font-family="Arial" font-size="${size/8}" fill="#ff6b6b" text-anchor="middle" dy=".3em">ST</text>
+  </svg>`;
+  return canvas;
+};
 
-console.log('✅ Created placeholder PWA icons');
+// Generate placeholder icons as SVG (will work better)
+fs.writeFileSync(path.join(iconsDir, 'icon-192x192.svg'), createPNGIcon(192));
+fs.writeFileSync(path.join(iconsDir, 'icon-512x512.svg'), createPNGIcon(512));
+
+// Also create PNG versions by copying SVG content
+fs.writeFileSync(path.join(iconsDir, 'icon-192x192.png'), createPNGIcon(192));
+fs.writeFileSync(path.join(iconsDir, 'icon-512x512.png'), createPNGIcon(512));
+
+console.log('✅ Created placeholder PWA icons (SVG and PNG)');
 
 // Update manifest.json to use SVG icons for now
 const manifestPath = path.join(distDir, 'manifest.json');
@@ -75,15 +89,15 @@ if (fs.existsSync(manifestPath)) {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   manifest.icons = [
     {
-      "src": "icons/icon-192x192.svg",
+      "src": "icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512x512.svg", 
+      "src": "icons/icon-512x512.png", 
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ];

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stranger-things-ar-v1-2025-07-25T16-07-57-963Z';
+const CACHE_NAME = 'stranger-things-ar-v1-2025-07-25T18-00-20-544Z';
 const CACHE_VERSION = '1.0.0';
 
 // Assets essenciais para cache

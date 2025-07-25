@@ -1347,10 +1347,6 @@ class StrangerThingsGame {
         if (this.inventoryManager) {
             this.inventoryManager.updateUI();
         }
-    }lItems) {
-                this.missionManager.completeMission(currentMission.id);
-            }
-        }
     }
 
     updateInventoryUI() {
