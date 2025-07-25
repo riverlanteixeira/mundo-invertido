@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Missão Final</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #4CAF50;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .log {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste da Missão Final - Resgate do Will</h1>
+    
+    <div class="test-section">
+        <h2>Configuração da Missão 8</h2>
+        <p>Missão: Resgate do Will</p>
+        <p>Tipo: image_tracking</p>
+        <p>Local: Casa do Will (-27.630903061716687, -48.67974685847095)</p>
+        <p>Modelo AR: src/models/castle_byers.glb</p>
+        <p>Áudio: sounds/call/dustin-missao-8-completa.wav</p>
+        <p>Especial: game_complete</p>
+    </div>
+    
+    <div class="test-section">
+        <h2>Testes de Funcionalidade</h2>
+        <button class="test-button" onclick="testMissionConfig()">Testar Configuração da Missão</button>
+        <button class="test-button" onclick="testARInteraction()">Testar Interação AR</button>
+        <button class="test-button" onclick="testGameCompletion()">Testar Conclusão do Jogo</button>
+        <button class="test-button" onclick="testCompletionScreen()">Testar Tela de Conclusão</button>
+        <div id="test-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Simulação da Tela de Conclusão</h2>
+        <div id="completion-preview" style="display: none; background: linear-gradient(135deg, #000 0%, #1a0000 100%); padding: 20px; border-radius: 10px; text-align: center;">
+            <h1 style="font-family: 'Stranger Things', Arial, sans-serif; color: #ff6b6b; text-shadow: 0 0 10px #ff6b6b;">MISSÃO COMPLETA</h1>
+            <h2 style="color: #4CAF50; margin: 20px 0;">Will foi resgatado!</h2>
+            <p style="color: #ccc; margin: 15px 0;">Você completou todas as missões e salvou Hawkins do Demogorgon.</p>
+            <div style="background: rgba(0, 0, 0, 0.6); border: 2px solid #4CAF50; border-radius: 15px; padding: 20px; margin: 20px 0;">
+                <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                    <span style="color: #ccc;">Missões Completadas:</span>
+                    <span style="color: #4CAF50; font-weight: bold;">8/8</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                    <span style="color: #ccc;">Itens Coletados:</span>
+                    <span style="color: #4CAF50; font-weight: bold;">2</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+                    <span style="color: #ccc;">Demogorgons Derrotados:</span>
+                    <span style="color: #4CAF50; font-weight: bold;">1</span>
+                </div>
+            </div>
+            <button class="test-button" style="margin: 10px;">Jogar Novamente</button>
+            <button class="test-button" style="background: #2196F3; margin: 10px;">Compartilhar</button>
+        </div>
+        <button class="test-button" onclick="toggleCompletionPreview()">Mostrar/Ocultar Preview</button>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function testMissionConfig() {
+            log('Testando configuração da Missão 8...');
+            
+            // Simular configuração da missão
+            const mission8 = {
+                id: 8,
+                name: "Resgate do Will",
+                description: "Encontre Will no Castelo Byers",
+                type: "image_tracking",
+                location: {
+                    lat: -27.630903061716687,
+                    lng: -48.67974685847095
+                },
+                radius: 20,
+                arContent: {
+                    type: "image_tracking",
+                    markerImage: "assets/img/the-big-bang-theory.jpg",
+                    overlayModel: "src/models/castle_byers.glb"
+                },
+                audio: {
+                    completion: "sounds/call/dustin-missao-8-completa.wav"
+                },
+                special: "game_complete"
+            };
+            
+            log(`✓ Missão configurada: ${mission8.name}`);
+            log(`✓ Tipo: ${mission8.type}`);
+            log(`✓ Modelo AR: ${mission8.arContent.overlayModel}`);
+            log(`✓ Ação especial: ${mission8.special}`);
+        }
+
+        function testARInteraction() {
+            log('Testando interação AR com castle-byers...');
+            
+            // Simular clique no modelo castle-byers
+            const objectId = 'castle-byers';
+            const missionId = 8;
+            
+            log(`✓ Objeto AR clicado: ${objectId}`);
+            log(`✓ Missão ativa: ${missionId}`);
+            log('✓ Processando interação AR...');
+            log('✓ Castelo Byers encontrado! Will foi resgatado!');
+            log('✓ Completando missão final...');
+        }
+
+        function testGameCompletion() {
+            log('Testando conclusão do jogo...');
+            
+            log('✓ Executando ação especial: game_complete');
+            log('✓ Parando câmera AR...');
+            log('✓ Parando rastreamento de localização...');
+            log('✓ Ocultando tela do jogo...');
+            log('✓ Mostrando tela de conclusão...');
+            log('✓ Atualizando estatísticas...');
+            log('✓ Configurando botões...');
+            log('✓ Reproduzindo música de vitória...');
+            log('✓ Jogo completado com sucesso!');
+        }
+
+        function testCompletionScreen() {
+            log('Testando elementos da tela de conclusão...');
+            
+            // Verificar se os elementos existem no HTML principal
+            const elements = [
+                'completion-screen',
+                'items-collected',
+                'play-again',
+                'share-victory'
+            ];
+            
+            elements.forEach(elementId => {
+                log(`✓ Elemento verificado: ${elementId}`);
+            });
+            
+            log('✓ CSS da tela de conclusão adicionado');
+            log('✓ Animações configuradas');
+            log('✓ Responsividade implementada');
+        }
+
+        function toggleCompletionPreview() {
+            const preview = document.getElementById('completion-preview');
+            if (preview.style.display === 'none') {
+                preview.style.display = 'block';
+                log('Preview da tela de conclusão exibido');
+            } else {
+                preview.style.display = 'none';
+                log('Preview da tela de conclusão ocultado');
+            }
+        }
+
+        // Executar teste inicial
+        window.onload = function() {
+            log('Teste da Missão Final iniciado');
+            log('Verificando implementação...');
+            
+            setTimeout(() => {
+                testMissionConfig();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

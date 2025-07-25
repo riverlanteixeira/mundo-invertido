@@ -3,73 +3,73 @@ const CACHE_VERSION = '1.0.0';
 
 // Assets essenciais para cache
 const ESSENTIAL_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/css/style.css',
-  '/fonts/stranger-things.ttf',
-  '/js/app.js',
-  '/js/game.js',
-  '/js/game-state.js',
-  '/js/utils.js',
-  '/js/audio-manager.js',
-  '/js/location-manager.js',
-  '/js/ar-manager.js',
-  '/js/mission-manager.js',
-  '/js/permission-handler.js'
+  './',
+  './index.html',
+  './manifest.json',
+  './css/style.css',
+  './fonts/stranger-things.ttf',
+  './js/app.js',
+  './js/game.js',
+  './js/game-state.js',
+  './js/utils.js',
+  './js/audio-manager.js',
+  './js/location-manager.js',
+  './js/ar-manager.js',
+  './js/mission-manager.js',
+  './js/permission-handler.js'
 ];
 
 // Assets de mídia para cache
 const MEDIA_ASSETS = [
   // Imagens
-  '/assets/img/dustin-call.png',
-  '/assets/img/the-big-bang-theory.jpg',
-  '/assets/img/bloco-h.jpg',
-  '/assets/img/taco.png',
-  '/assets/img/gasolina.png',
+  './assets/img/dustin-call.png',
+  './assets/img/the-big-bang-theory.jpg',
+  './assets/img/bloco-h.jpg',
+  './assets/img/taco.png',
+  './assets/img/gasolina.png',
   
   // GIFs
-  '/assets/gif/luzes-piscando.gif',
-  '/assets/gif/portal.gif',
-  '/assets/gif/demogorgon-attack.gif',
+  './assets/gif/luzes-piscando.gif',
+  './assets/gif/portal.gif',
+  './assets/gif/demogorgon-attack.gif',
   
   // Modelos 3D
-  '/assets/models/bicicleta-will.glb',
-  '/src/models/castle_byers.glb',
-  '/src/models/demogorgon.glb',
-  '/src/models/portal.glb',
+  './assets/models/bicicleta-will.glb',
+  './src/models/castle_byers.glb',
+  './src/models/demogorgon.glb',
+  './src/models/portal.glb',
   
   // Áudios - Ligações
-  '/sounds/call/dustin-intro.wav',
-  '/sounds/call/dustin-missao-1-completa.wav',
-  '/sounds/call/dustin-missao-2-completa.wav',
-  '/sounds/call/dustin-missao-3-completa.wav',
-  '/sounds/call/dustin-missao-4-completa.wav',
-  '/sounds/call/dustin-missao-5-completa.wav',
-  '/sounds/call/dustin-missao-6-completa.wav',
-  '/sounds/call/dustin-missao-7-completa.wav',
-  '/sounds/call/dustin-missao-8-completa.wav',
-  '/sounds/call/dustin-missao-falha.wav',
+  './sounds/call/dustin-intro.wav',
+  './sounds/call/dustin-missao-1-completa.wav',
+  './sounds/call/dustin-missao-2-completa.wav',
+  './sounds/call/dustin-missao-3-completa.wav',
+  './sounds/call/dustin-missao-4-completa.wav',
+  './sounds/call/dustin-missao-5-completa.wav',
+  './sounds/call/dustin-missao-6-completa.wav',
+  './sounds/call/dustin-missao-7-completa.wav',
+  './sounds/call/dustin-missao-8-completa.wav',
+  './sounds/call/dustin-missao-falha.wav',
   
   // Áudios - Efeitos
-  '/sounds/effects/demogorgon-approach.wav',
-  '/sounds/effects/demogorgon-roar.wav',
-  '/sounds/effects/lights-flicker.wav',
-  '/sounds/effects/portal-open.wav',
-  '/sounds/effects/radio-static.wav',
+  './sounds/effects/demogorgon-approach.wav',
+  './sounds/effects/demogorgon-roar.wav',
+  './sounds/effects/lights-flicker.wav',
+  './sounds/effects/portal-open.wav',
+  './sounds/effects/radio-static.wav',
   
   // Áudios - Música
-  '/sounds/music/main-theme.mp3',
-  '/sounds/music/upside-down.mp3',
-  '/sounds/music/suspense.mp3',
-  '/sounds/music/victory.mp3',
-  '/sounds/music/lab-them.mp3',
+  './sounds/music/main-theme.mp3',
+  './sounds/music/upside-down.mp3',
+  './sounds/music/suspense.mp3',
+  './sounds/music/victory.mp3',
+  './sounds/music/lab-them.mp3',
   
   // Áudios - Ambiente
-  '/sounds/ambient/forest.mp3',
-  '/sounds/ambient/hawkins.mp3',
-  '/sounds/ambient/lab.mp3',
-  '/sounds/ambient/upside-down.mp3'
+  './sounds/ambient/forest.mp3',
+  './sounds/ambient/hawkins.mp3',
+  './sounds/ambient/lab.mp3',
+  './sounds/ambient/upside-down.mp3'
 ];
 
 const ALL_ASSETS = [...ESSENTIAL_ASSETS, ...MEDIA_ASSETS];
@@ -139,7 +139,8 @@ self.addEventListener('fetch', (event) => {
             const responseToCache = response.clone();
             
             // Adiciona ao cache se for um asset conhecido
-            if (ALL_ASSETS.includes(event.request.url.replace(self.location.origin, ''))) {
+            const requestPath = event.request.url.replace(self.location.origin, '').replace(/^\/[^\/]*/, '.');
+            if (ALL_ASSETS.some(asset => requestPath.endsWith(asset.replace('./', '')))) {
               caches.open(CACHE_NAME)
                 .then((cache) => {
                   cache.put(event.request, responseToCache);
@@ -151,7 +152,7 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Fallback para offline
             if (event.request.destination === 'document') {
-              return caches.match('/index.html');
+              return caches.match('./index.html');
             }
           });
       })

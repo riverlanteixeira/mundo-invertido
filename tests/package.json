@@ -1,0 +1,39 @@
+{
+  "name": "stranger-things-ar-tests",
+  "version": "1.0.0",
+  "description": "Testes automatizados para o jogo Stranger Things AR",
+  "scripts": {
+    "test": "node run-tests.js all",
+    "test:unit": "node run-tests.js unit",
+    "test:integration": "node run-tests.js integration",
+    "test:performance": "node run-tests.js performance",
+    "test:coverage": "node run-tests.js coverage",
+    "test:watch": "node run-tests.js watch",
+    "test:clean": "node run-tests.js clean",
+    "test:ci": "node run-tests.js all --coverage --silent",
+    "test:samsung": "node run-tests.js performance samsung-s20fe"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "@testing-library/dom": "^9.3.0",
+    "@testing-library/jest-dom": "^5.16.0",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jest-html-reporters": "^3.1.0",
+    "jest-junit": "^16.0.0"
+  },
+  "babel": {
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "node": "current"
+          }
+        }
+      ]
+    ]
+  }
+}

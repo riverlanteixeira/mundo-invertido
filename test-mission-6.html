@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Missão 6 - Stranger Things AR</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .test-controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Stranger Things', monospace;
+        }
+        
+        .test-button {
+            display: block;
+            margin: 5px 0;
+            padding: 10px 15px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Stranger Things', monospace;
+        }
+        
+        .test-button:hover {
+            background: #ff5252;
+        }
+        
+        .test-info {
+            margin: 10px 0;
+            font-size: 12px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-controls">
+        <h3>Teste Missão 6</h3>
+        <div class="test-info">
+            Local: (-27.630116851676945, -48.67954178126999)<br>
+            Tipo: Combat<br>
+            Status: <span id="mission-status">Não iniciada</span>
+        </div>
+        <button class="test-button" onclick="initGame()">Inicializar Jogo</button>
+        <button class="test-button" onclick="simulateLocation()">Simular Localização</button>
+        <button class="test-button" onclick="startMission6()">Iniciar Missão 6</button>
+        <button class="test-button" onclick="testCombat()">Testar Combate</button>
+        <button class="test-button" onclick="testVibration()">Testar Vibração</button>
+        <button class="test-button" onclick="testAudio()">Testar Áudios</button>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-content">
+            <div class="stranger-logo">STRANGER THINGS</div>
+            <div class="loading-progress">
+                <div class="progress-bar">
+                    <div id="loading-progress" class="progress-fill"></div>
+                </div>
+                <div id="loading-text" class="loading-text">Carregando...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Interface -->
+    <div id="call-interface" class="call-interface hidden">
+        <div class="call-content">
+            <img id="dustin-image" src="assets/img/dustin-call.png" alt="Dustin" class="dustin-image">
+            <div class="call-info">
+                <div class="call-status">Chamada recebida</div>
+                <div class="caller-name">Dustin Henderson</div>
+            </div>
+            <button id="answer-call" class="answer-button">Atender</button>
+        </div>
+    </div>
+
+    <!-- AR Scene -->
+    <a-scene id="ar-scene" class="hidden" embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best; maxDetectionRate: 60; canvasWidth: 640; canvasHeight: 480;">
+        <a-assets>
+            <a-asset-item id="bicicleta-will-model" src="assets/models/bicicleta-will.glb"></a-asset-item>
+            <a-asset-item id="castle-byers-model" src="src/models/castle_byers.glb"></a-asset-item>
+            <a-asset-item id="demogorgon-model" src="src/models/demogorgon.glb"></a-asset-item>
+        </a-assets>
+        
+        <a-camera id="ar-camera" gps-camera rotation-reader></a-camera>
+    </a-scene>
+
+    <!-- Game UI -->
+    <div id="game-ui" class="game-ui hidden">
+        <div class="mission-info">
+            <h2 id="mission-title">Missão</h2>
+            <p id="mission-description">Descrição da missão</p>
+            <div id="distance-text" class="distance-text">Distância: --</div>
+        </div>
+        
+        <div id="navigation-arrow" class="navigation-arrow hidden">
+            <svg class="arrow-svg" viewBox="0 0 100 100">
+                <path d="M50 10 L80 50 L50 90 L50 70 L20 50 L50 30 Z" fill="#ff6b6b"/>
+            </svg>
+            <div id="arrow-distance" class="arrow-distance">--</div>
+        </div>
+    </div>
+
+    <!-- Combat Interface -->
+    <div id="combat-interface" class="combat-interface hidden">
+        <div class="combat-header">
+            <h3 id="combat-title">DEMOGORGON DETECTADO!</h3>
+            <p id="combat-instruction">Use seus itens para atacar</p>
+        </div>
+        <div class="combat-actions">
+            <button id="use-taco" class="combat-button weapon-button">
+                <img src="assets/img/taco.png" alt="Taco">
+                <span>Taco</span>
+            </button>
+            <button id="use-gasolina" class="combat-button weapon-button">
+                <img src="assets/img/gasolina.png" alt="Gasolina">
+                <span>Gasolina</span>
+            </button>
+        </div>
+        <div class="combat-status">
+            <div class="combat-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="combat-progress-fill"></div>
+                </div>
+                <span class="progress-text" id="combat-progress-text">Prepare-se para atacar!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory -->
+    <div id="inventory" class="inventory">
+        <div class="inventory-header">Inventário</div>
+        <div class="inventory-items"></div>
+    </div>
+
+    <!-- Audio Controls -->
+    <div id="audio-controls" class="audio-controls hidden">
+        <button id="mute-button" class="audio-button">🔊</button>
+        <input id="volume-slider" type="range" min="0" max="100" value="70" class="volume-slider">
+    </div>
+
+    <!-- Upside Down Filter -->
+    <div id="upside-down-filter" class="upside-down-filter hidden"></div>
+
+    <!-- Scripts -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/permission-handler.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/location-manager.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/mission-manager.js"></script>
+    <script src="js/inventory-manager.js"></script>
+    <script src="js/upside-down-manager.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        let game = null;
+        
+        async function initGame() {
+            try {
+                updateStatus('Inicializando...');
+                game = new StrangerThingsGame();
+                await game.init();
+                
+                // Adicionar itens necessários ao inventário para teste
+                game.inventoryManager.addItem('taco', 'assets/img/taco.png');
+                game.inventoryManager.addItem('gasolina', 'assets/img/gasolina.png');
+                
+                updateStatus('Jogo inicializado');
+                console.log('Jogo inicializado para teste da Missão 6');
+            } catch (error) {
+                updateStatus('Erro: ' + error.message);
+                console.error('Erro ao inicializar:', error);
+            }
+        }
+        
+        function simulateLocation() {
+            if (!game) {
+                alert('Inicialize o jogo primeiro');
+                return;
+            }
+            
+            // Simular localização da Missão 6
+            const mission6Location = {
+                lat: -27.630116851676945,
+                lng: -48.67954178126999,
+                accuracy: 10,
+                timestamp: Date.now()
+            };
+            
+            // Atualizar posição no LocationManager
+            game.locationManager.updateCurrentPosition(mission6Location);
+            
+            updateStatus('Localização simulada');
+            console.log('Localização simulada para Missão 6:', mission6Location);
+        }
+        
+        function startMission6() {
+            if (!game) {
+                alert('Inicialize o jogo primeiro');
+                return;
+            }
+            
+            try {
+                // Definir missão 6 como atual
+                game.missionManager.startMission(6);
+                
+                // Definir destino no LocationManager
+                const mission6 = game.missionManager.getMission(6);
+                game.locationManager.setTarget(
+                    mission6.location.lat,
+                    mission6.location.lng,
+                    mission6.radius
+                );
+                
+                // Atualizar UI
+                game.updateMissionUI(6);
+                
+                // Simular chegada ao destino
+                setTimeout(() => {
+                    game.handleTargetReached({
+                        target: mission6.location,
+                        position: { lat: mission6.location.lat, lng: mission6.location.lng },
+                        distance: 5
+                    });
+                }, 1000);
+                
+                updateStatus('Missão 6 iniciada');
+                console.log('Missão 6 iniciada');
+            } catch (error) {
+                updateStatus('Erro: ' + error.message);
+                console.error('Erro ao iniciar Missão 6:', error);
+            }
+        }
+        
+        function testCombat() {
+            if (!game) {
+                alert('Inicialize o jogo primeiro');
+                return;
+            }
+            
+            try {
+                const mission6 = game.missionManager.getMission(6);
+                game.arManager.startCombat(mission6.arContent);
+                updateStatus('Combate iniciado');
+                console.log('Teste de combate iniciado');
+            } catch (error) {
+                updateStatus('Erro: ' + error.message);
+                console.error('Erro no teste de combate:', error);
+            }
+        }
+        
+        function testVibration() {
+            // Testar vibração conforme especificado na Missão 6
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+                updateStatus('Vibração testada');
+                console.log('Vibração testada');
+            } else {
+                updateStatus('Vibração não suportada');
+                console.log('Vibração não suportada neste dispositivo');
+            }
+        }
+        
+        async function testAudio() {
+            if (!game) {
+                alert('Inicialize o jogo primeiro');
+                return;
+            }
+            
+            try {
+                updateStatus('Testando áudio de aproximação...');
+                await game.audioManager.playAudio('sounds/call/dustin-missao-6-completa.wav');
+                
+                setTimeout(async () => {
+                    updateStatus('Testando áudio de vitória...');
+                    await game.audioManager.playAudio('sounds/call/dustin-missao-7-completa.wav');
+                    updateStatus('Áudios testados');
+                }, 3000);
+                
+                console.log('Teste de áudios da Missão 6');
+            } catch (error) {
+                updateStatus('Erro: ' + error.message);
+                console.error('Erro no teste de áudio:', error);
+            }
+        }
+        
+        function updateStatus(status) {
+            document.getElementById('mission-status').textContent = status;
+        }
+        
+        // Inicializar automaticamente quando a página carregar
+        window.addEventListener('load', () => {
+            console.log('Página de teste da Missão 6 carregada');
+        });
+    </script>
+</body>
+</html>

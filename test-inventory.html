@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste do Sistema de Inventário</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="test-container" style="padding: 20px; background: #000; color: #fff; min-height: 100vh;">
+        <h1 style="color: #ff6b6b; margin-bottom: 20px;">Teste do Sistema de Inventário</h1>
+        
+        <!-- Botões de teste -->
+        <div style="margin-bottom: 30px;">
+            <button id="add-taco" class="game-button" style="margin: 5px;">Adicionar Taco</button>
+            <button id="add-gasolina" class="game-button" style="margin: 5px;">Adicionar Gasolina</button>
+            <button id="add-bicicleta" class="game-button" style="margin: 5px;">Adicionar Bicicleta</button>
+            <button id="clear-inventory" class="game-button" style="margin: 5px; background: #f44336;">Limpar Inventário</button>
+        </div>
+        
+        <!-- Status do inventário -->
+        <div id="inventory-status" style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+            <h3>Status do Inventário:</h3>
+            <p id="item-count">Itens: 0</p>
+            <p id="item-list">Lista: Vazio</p>
+        </div>
+        
+        <!-- Painel de inventário (simulado) -->
+        <div class="inventory-panel" style="position: relative; top: auto; right: auto; margin: 20px 0;">
+            <div class="inventory-items"></div>
+        </div>
+        
+        <!-- Log de eventos -->
+        <div id="event-log" style="margin-top: 30px; padding: 15px; background: rgba(0,0,0,0.5); border-radius: 8px; max-height: 300px; overflow-y: auto;">
+            <h3>Log de Eventos:</h3>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/inventory-manager.js"></script>
+    
+    <script>
+        // Teste do sistema de inventário
+        let gameState, inventoryManager;
+        
+        async function initTest() {
+            try {
+                // Inicializar GameState
+                gameState = new GameState();
+                
+                // Inicializar InventoryManager
+                inventoryManager = new InventoryManager(gameState);
+                await inventoryManager.init();
+                
+                // Configurar event listeners do inventário
+                inventoryManager.on('itemAdded', (data) => {
+                    logEvent(`Item adicionado: ${data.itemId} (${data.item.name})`);
+                    updateStatus();
+                });
+                
+                inventoryManager.on('itemRemoved', (data) => {
+                    logEvent(`Item removido: ${data.itemId} (${data.item.name})`);
+                    updateStatus();
+                });
+                
+                inventoryManager.on('itemUsed', (data) => {
+                    logEvent(`Item usado: ${data.itemId} (${data.item.name})`);
+                    updateStatus();
+                });
+                
+                inventoryManager.on('itemClicked', (data) => {
+                    logEvent(`Item clicado: ${data.itemId} (${data.item.name})`);
+                });
+                
+                inventoryManager.on('inventoryCleared', () => {
+                    logEvent('Inventário limpo');
+                    updateStatus();
+                });
+                
+                // Configurar botões de teste
+                document.getElementById('add-taco').addEventListener('click', () => {
+                    inventoryManager.addItem('taco');
+                });
+                
+                document.getElementById('add-gasolina').addEventListener('click', () => {
+                    inventoryManager.addItem('gasolina');
+                });
+                
+                document.getElementById('add-bicicleta').addEventListener('click', () => {
+                    inventoryManager.addItem('bicicleta-will');
+                });
+                
+                document.getElementById('clear-inventory').addEventListener('click', () => {
+                    inventoryManager.clear();
+                });
+                
+                logEvent('Sistema de inventário inicializado com sucesso!');
+                updateStatus();
+                
+            } catch (error) {
+                logEvent(`Erro ao inicializar: ${error.message}`, 'error');
+            }
+        }
+        
+        function updateStatus() {
+            const items = inventoryManager.getItems();
+            const stats = inventoryManager.getStats();
+            
+            document.getElementById('item-count').textContent = `Itens: ${stats.total}`;
+            document.getElementById('item-list').textContent = `Lista: ${items.length > 0 ? items.join(', ') : 'Vazio'}`;
+        }
+        
+        function logEvent(message, type = 'info') {
+            const logContent = document.getElementById('log-content');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'warn' ? '#ffa726' : '#4CAF50';
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.color = color;
+            logEntry.style.marginBottom = '5px';
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            
+            logContent.appendChild(logEntry);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+        
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', initTest);
+    </script>
+</body>
+</html>

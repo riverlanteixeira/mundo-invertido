@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste - Sistema de Tratamento de Erros</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .test-container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            color: #fff;
+            min-height: 100vh;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #333;
+            border-radius: 10px;
+        }
+        
+        .test-section h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+        }
+        
+        .test-button {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background: #ff5252;
+        }
+        
+        .test-button.secondary {
+            background: #666;
+        }
+        
+        .test-button.secondary:hover {
+            background: #555;
+        }
+        
+        .test-output {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .error-log {
+            color: #ff6b6b;
+        }
+        
+        .warn-log {
+            color: #ffa726;
+        }
+        
+        .info-log {
+            color: #4fc3f7;
+        }
+        
+        .success-log {
+            color: #66bb6a;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Teste do Sistema de Tratamento de Erros</h1>
+        <p>Esta página testa as funcionalidades do sistema de tratamento de erros e fallbacks implementado.</p>
+        
+        <div class="test-section">
+            <h3>📍 Testes de Geolocalização</h3>
+            <button class="test-button" onclick="testLocationPermissionDenied()">
+                Simular Permissão Negada
+            </button>
+            <button class="test-button" onclick="testLocationUnavailable()">
+                Simular Localização Indisponível
+            </button>
+            <button class="test-button" onclick="testLocationTimeout()">
+                Simular Timeout
+            </button>
+            <button class="test-button secondary" onclick="testManualLocation()">
+                Testar Localização Manual
+            </button>
+            <div id="location-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📷 Testes de Realidade Aumentada</h3>
+            <button class="test-button" onclick="testCameraError()">
+                Simular Erro de Câmera
+            </button>
+            <button class="test-button" onclick="testWebGLError()">
+                Simular Erro WebGL
+            </button>
+            <button class="test-button" onclick="testARJSError()">
+                Simular Erro AR.js
+            </button>
+            <button class="test-button secondary" onclick="testNoARMode()">
+                Testar Modo sem AR
+            </button>
+            <div id="ar-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>⚠️ Testes de Erros Críticos</h3>
+            <button class="test-button" onclick="testJavaScriptError()">
+                Simular Erro JavaScript
+            </button>
+            <button class="test-button" onclick="testPromiseRejection()">
+                Simular Promise Rejeitada
+            </button>
+            <button class="test-button" onclick="testCriticalError()">
+                Simular Erro Crítico
+            </button>
+            <button class="test-button secondary" onclick="testDegradedMode()">
+                Ativar Modo Degradado
+            </button>
+            <div id="critical-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔄 Testes de Retry e Fallback</h3>
+            <button class="test-button" onclick="testRetryWithBackoff()">
+                Testar Retry com Backoff
+            </button>
+            <button class="test-button" onclick="testFallbackModes()">
+                Testar Modos de Fallback
+            </button>
+            <button class="test-button secondary" onclick="testCompatibilityMode()">
+                Testar Modo Compatibilidade
+            </button>
+            <div id="retry-output" class="test-output"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Estatísticas e Logs</h3>
+            <button class="test-button secondary" onclick="showErrorStats()">
+                Mostrar Estatísticas
+            </button>
+            <button class="test-button secondary" onclick="clearLogs()">
+                Limpar Logs
+            </button>
+            <button class="test-button secondary" onclick="exportErrorLog()">
+                Exportar Log de Erros
+            </button>
+            <div id="stats-output" class="test-output"></div>
+        </div>
+    </div>
+
+    <!-- Scripts necessários -->
+    <script src="js/utils.js"></script>
+    <script src="js/error-handler.js"></script>
+    
+    <script>
+        // Inicializar sistema de tratamento de erros para testes
+        let errorHandler;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            errorHandler = new ErrorHandler();
+            log('Sistema de tratamento de erros inicializado', 'success');
+            
+            // Configurar callbacks para testes
+            errorHandler.onError('critical', (errorInfo) => {
+                log(`Erro crítico detectado: ${errorInfo.message}`, 'error', 'critical-output');
+            });
+            
+            errorHandler.onError('degraded_mode', (data) => {
+                log(`Modo degradado ativado: ${data.reason}`, 'warn', 'critical-output');
+            });
+        });
+        
+        function log(message, type = 'info', outputId = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            
+            console.log(logMessage);
+            
+            if (outputId) {
+                const output = document.getElementById(outputId);
+                if (output) {
+                    const logElement = document.createElement('div');
+                    logElement.className = `${type}-log`;
+                    logElement.textContent = logMessage;
+                    output.appendChild(logElement);
+                    output.scrollTop = output.scrollHeight;
+                }
+            }
+        }
+        
+        // Testes de Geolocalização
+        function testLocationPermissionDenied() {
+            log('Testando erro de permissão de localização negada...', 'info', 'location-output');
+            
+            const mockError = {
+                code: 1,
+                message: 'User denied the request for Geolocation.'
+            };
+            
+            const result = errorHandler.handleLocationError(mockError, {
+                currentMission: 1,
+                playerPosition: null
+            });
+            
+            log(`Resultado: ${JSON.stringify(result)}`, 'info', 'location-output');
+        }
+        
+        function testLocationUnavailable() {
+            log('Testando localização indisponível...', 'info', 'location-output');
+            
+            const mockError = {
+                code: 2,
+                message: 'Position unavailable.'
+            };
+            
+            const result = errorHandler.handleLocationError(mockError, {
+                currentMission: 2,
+                playerPosition: { lat: -27.630, lng: -48.680 }
+            });
+            
+            log(`Resultado: ${JSON.stringify(result)}`, 'info', 'location-output');
+        }
+        
+        function testLocationTimeout() {
+            log('Testando timeout de localização...', 'info', 'location-output');
+            
+            const mockError = {
+                code: 3,
+                message: 'Timeout expired.'
+            };
+            
+            const result = errorHandler.handleLocationError(mockError, {
+                currentMission: 3,
+                playerPosition: { lat: -27.625, lng: -48.679 }
+            });
+            
+            log(`Resultado: ${JSON.stringify(result)}`, 'info', 'location-output');
+        }
+        
+        function testManualLocation() {
+            log('Testando interface de localização manual...', 'info', 'location-output');
+            errorHandler.showManualLocationInterface();
+        }
+        
+        // Testes de AR
+        function testCameraError() {
+            log('Testando erro de câmera...', 'info', 'ar-output');
+            
+            const mockError = new Error('Camera access denied');
+            mockError.name = 'NotAllowedError';
+            
+            const result = errorHandler.handleARError(mockError, {
+                currentMission: 1,
+                arMode: 'model'
+            });
+            
+            log(`Resultado: ${JSON.stringify(result)}`, 'info', 'ar-output');
+        }
+        
+        function testWebGLError() {
+            log('Testando erro de WebGL...', 'info', 'ar-output');
+            
+            const mockError = new Error('WebGL context lost');
+            
+            const result = errorHandler.handleARError(mockError, {
+                currentMission: 2,
+                arMode: 'image_tracking'
+            });
+            
+            log(`Resultado: ${JSON.stringify(result)}`, 'info', 'ar-output');
+        }
+        
+        function testARJSError() {
+            log('Testando erro do AR.js...', 'info', 'ar-output');
+            
+            const mockError = new Error('AR.js initialization failed');
+            
+            const result = errorHandler.handleARError(mockError, {
+                currentMission: 3,
+                arMode: 'combat'
+            });
+            
+            log(`Resultado: ${JSON.stringify(result)}`, 'info', 'ar-output');
+        }
+        
+        function testNoARMode() {
+            log('Testando modo sem AR...', 'info', 'ar-output');
+            const result = errorHandler.activateNoARMode();
+            log(`Modo sem AR ativado: ${JSON.stringify(result)}`, 'success', 'ar-output');
+        }
+        
+        // Testes de Erros Críticos
+        function testJavaScriptError() {
+            log('Simulando erro JavaScript...', 'info', 'critical-output');
+            
+            try {
+                // Simular erro JavaScript
+                nonExistentFunction();
+            } catch (error) {
+                errorHandler.handleGlobalError({
+                    type: 'javascript',
+                    message: error.message,
+                    timestamp: Date.now()
+                });
+            }
+        }
+        
+        function testPromiseRejection() {
+            log('Simulando promise rejeitada...', 'info', 'critical-output');
+            
+            Promise.reject(new Error('Simulated promise rejection'))
+                .catch(error => {
+                    errorHandler.handleGlobalError({
+                        type: 'promise',
+                        message: error.message,
+                        timestamp: Date.now()
+                    });
+                });
+        }
+        
+        function testCriticalError() {
+            log('Simulando erro crítico...', 'info', 'critical-output');
+            
+            errorHandler.handleGlobalError({
+                type: 'critical_test',
+                message: 'Erro crítico simulado para teste',
+                timestamp: Date.now()
+            });
+        }
+        
+        function testDegradedMode() {
+            log('Ativando modo degradado...', 'info', 'critical-output');
+            errorHandler.activateDegradedMode('Teste de modo degradado');
+        }
+        
+        // Testes de Retry
+        async function testRetryWithBackoff() {
+            log('Testando retry com backoff...', 'info', 'retry-output');
+            
+            let attempts = 0;
+            const mockOperation = () => {
+                attempts++;
+                log(`Tentativa ${attempts}`, 'info', 'retry-output');
+                
+                if (attempts < 3) {
+                    throw new Error(`Falha na tentativa ${attempts}`);
+                }
+                
+                return `Sucesso na tentativa ${attempts}`;
+            };
+            
+            try {
+                const result = await errorHandler.retryWithBackoff(mockOperation, {
+                    operation: 'operação de teste'
+                });
+                
+                log(`Retry bem-sucedido: ${JSON.stringify(result)}`, 'success', 'retry-output');
+            } catch (error) {
+                log(`Retry falhou: ${error.message}`, 'error', 'retry-output');
+            }
+        }
+        
+        function testFallbackModes() {
+            log('Testando modos de fallback...', 'info', 'retry-output');
+            
+            // Testar diferentes modos de fallback
+            const modes = ['location', 'ar', 'audio'];
+            
+            modes.forEach(mode => {
+                errorHandler.fallbackModes[mode] = true;
+                log(`Modo de fallback ${mode} ativado`, 'warn', 'retry-output');
+            });
+            
+            const limitations = errorHandler.getDegradedModeLimitations();
+            log(`Limitações ativas: ${limitations.join(', ')}`, 'info', 'retry-output');
+        }
+        
+        function testCompatibilityMode() {
+            log('Testando modo de compatibilidade...', 'info', 'retry-output');
+            const result = errorHandler.activateCompatibilityMode();
+            log(`Modo de compatibilidade: ${JSON.stringify(result)}`, 'success', 'retry-output');
+        }
+        
+        // Estatísticas e Logs
+        function showErrorStats() {
+            log('Obtendo estatísticas de erro...', 'info', 'stats-output');
+            
+            const stats = errorHandler.getErrorStats();
+            log(`Estatísticas: ${JSON.stringify(stats, null, 2)}`, 'info', 'stats-output');
+        }
+        
+        function clearLogs() {
+            const outputs = document.querySelectorAll('.test-output');
+            outputs.forEach(output => {
+                output.innerHTML = '';
+            });
+            log('Logs limpos', 'success');
+        }
+        
+        function exportErrorLog() {
+            const stats = errorHandler.getErrorStats();
+            const logData = {
+                timestamp: new Date().toISOString(),
+                stats: stats,
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            };
+            
+            const blob = new Blob([JSON.stringify(logData, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `error-log-${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            log('Log de erros exportado', 'success', 'stats-output');
+        }
+    </script>
+</body>
+</html>

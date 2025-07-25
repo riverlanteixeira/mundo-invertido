@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mission 2 - Casa do Will</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        .warning { color: #ff9800; }
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #ff5252;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mission 2 Test - Casa do Will</h1>
+    
+    <div class="test-section">
+        <h2>1. Mission Configuration Test</h2>
+        <div id="mission-config-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Required Assets Test</h2>
+        <div id="assets-test-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. AR Image Tracking Test</h2>
+        <div id="ar-tracking-results"></div>
+        <button onclick="testImageTracking()">Test Image Tracking</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Audio Delay Test</h2>
+        <div id="audio-delay-results"></div>
+        <button onclick="testAudioDelay()">Test 10s Audio Delay</button>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/mission-manager.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/game.js"></script>
+    <script>
+        let game = null;
+        
+        async function testMissionConfiguration() {
+            const results = document.getElementById('mission-config-results');
+            
+            try {
+                // Create game instance
+                game = new StrangerThingsGame();
+                await game.init();
+                
+                // Load mission configurations
+                game.loadMissionConfigurations();
+                
+                // Get Mission 2
+                const mission2 = game.missionManager.getMission(2);
+                
+                if (mission2) {
+                    results.innerHTML += `<div class="success">✓ Mission 2 found: ${mission2.name}</div>`;
+                    
+                    // Check location
+                    const expectedLat = -27.630903061716687;
+                    const expectedLng = -48.67974685847095;
+                    
+                    if (mission2.location.lat === expectedLat && mission2.location.lng === expectedLng) {
+                        results.innerHTML += `<div class="success">✓ Location coordinates correct</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Location coordinates incorrect</div>`;
+                    }
+                    
+                    // Check type
+                    if (mission2.type === 'image_tracking') {
+                        results.innerHTML += `<div class="success">✓ Mission type correct: ${mission2.type}</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Mission type incorrect: ${mission2.type}</div>`;
+                    }
+                    
+                    // Check AR content
+                    if (mission2.arContent) {
+                        const arContent = mission2.arContent;
+                        
+                        if (arContent.markerImage === 'assets/img/the-big-bang-theory.jpg') {
+                            results.innerHTML += `<div class="success">✓ Marker image correct</div>`;
+                        } else {
+                            results.innerHTML += `<div class="error">✗ Marker image incorrect</div>`;
+                        }
+                        
+                        if (arContent.overlayGif === 'assets/gif/luzes-piscando.gif') {
+                            results.innerHTML += `<div class="success">✓ Overlay GIF correct</div>`;
+                        } else {
+                            results.innerHTML += `<div class="error">✗ Overlay GIF incorrect</div>`;
+                        }
+                        
+                        if (arContent.audioDelay === 10000) {
+                            results.innerHTML += `<div class="success">✓ Audio delay correct: ${arContent.audioDelay}ms</div>`;
+                        } else {
+                            results.innerHTML += `<div class="error">✗ Audio delay incorrect: ${arContent.audioDelay}ms</div>`;
+                        }
+                    } else {
+                        results.innerHTML += `<div class="error">✗ AR content missing</div>`;
+                    }
+                    
+                    // Check completion audio
+                    if (mission2.audio && mission2.audio.completion === 'sounds/call/dustin-missao-2-completa.wav') {
+                        results.innerHTML += `<div class="success">✓ Completion audio correct</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Completion audio incorrect</div>`;
+                    }
+                    
+                } else {
+                    results.innerHTML += `<div class="error">✗ Mission 2 not found</div>`;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing mission configuration: ${error.message}</div>`;
+            }
+        }
+        
+        async function testRequiredAssets() {
+            const results = document.getElementById('assets-test-results');
+            const requiredAssets = [
+                'assets/img/the-big-bang-theory.jpg',
+                'assets/gif/luzes-piscando.gif',
+                'assets/patterns/the-big-bang-theory.patt',
+                'sounds/call/dustin-missao-2-completa.wav'
+            ];
+            
+            for (const asset of requiredAssets) {
+                try {
+                    const response = await fetch(asset, { method: 'HEAD' });
+                    if (response.ok) {
+                        results.innerHTML += `<div class="success">✓ ${asset} - Available</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ ${asset} - Not found (${response.status})</div>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="error">✗ ${asset} - Error: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        function testImageTracking() {
+            const results = document.getElementById('ar-tracking-results');
+            results.innerHTML = '<div class="info">Testing image tracking simulation...</div>';
+            
+            try {
+                if (game && game.arManager) {
+                    // Simulate marker detection
+                    const arContent = {
+                        markerImage: 'assets/img/the-big-bang-theory.jpg',
+                        overlayGif: 'assets/gif/luzes-piscando.gif',
+                        audioDelay: 10000
+                    };
+                    
+                    // Test the handleMarkerDetected method
+                    game.handleMarkerDetected(arContent);
+                    
+                    results.innerHTML += '<div class="success">✓ Image tracking simulation started</div>';
+                    results.innerHTML += '<div class="info">Check console for detailed logs</div>';
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or AR Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing image tracking: ${error.message}</div>`;
+            }
+        }
+        
+        function testAudioDelay() {
+            const results = document.getElementById('audio-delay-results');
+            results.innerHTML = '<div class="info">Testing 10-second audio delay...</div>';
+            
+            try {
+                if (game) {
+                    // Test the audio delay indicator
+                    game.showAudioDelayIndicator(10000);
+                    
+                    results.innerHTML += '<div class="success">✓ Audio delay indicator shown</div>';
+                    results.innerHTML += '<div class="info">You should see a countdown indicator on screen</div>';
+                    
+                    // Simulate the delay completion
+                    setTimeout(() => {
+                        results.innerHTML += '<div class="success">✓ 10-second delay completed</div>';
+                    }, 10000);
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing audio delay: ${error.message}</div>`;
+            }
+        }
+        
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Starting Mission 2 tests...');
+            await testMissionConfiguration();
+            await testRequiredAssets();
+        });
+    </script>
+</body>
+</html>

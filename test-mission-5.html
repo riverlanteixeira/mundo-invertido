@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Missão 5 - Laboratório Nacional de Hawkins</title>
+    
+    <!-- A-Frame e AR.js -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        .test-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            font-family: monospace;
+            max-width: 300px;
+        }
+        
+        .test-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .test-button:hover {
+            background: #ff5252;
+        }
+        
+        .test-status {
+            margin: 10px 0;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .status-success {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4caf50;
+        }
+        
+        .status-error {
+            background: rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
+        
+        .status-info {
+            background: rgba(33, 150, 243, 0.3);
+            color: #2196f3;
+        }
+        
+        .mission-info {
+            background: rgba(156, 39, 176, 0.3);
+            color: #9c27b0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Controles de teste -->
+    <div class="test-controls">
+        <h3>🧪 Teste Missão 5</h3>
+        <div class="mission-info">
+            <strong>Laboratório Nacional de Hawkins</strong><br>
+            Localização: -27.624056768580015, -48.68124296486716<br>
+            Rastrear: bloco-h.jpg → portal.gif<br>
+            Clique no portal → Ativar mundo invertido
+        </div>
+        
+        <button class="test-button" onclick="initTest()">🚀 Iniciar Teste</button>
+        <button class="test-button" onclick="simulateLocation()">📍 Simular Localização</button>
+        <button class="test-button" onclick="testImageTracking()">📷 Testar Rastreamento</button>
+        <button class="test-button" onclick="testPortalClick()">🌀 Simular Clique Portal</button>
+        <button class="test-button" onclick="testUpsideDown()">🔄 Testar Mundo Invertido</button>
+        <button class="test-button" onclick="resetTest()">🔄 Reset</button>
+        
+        <div id="test-status"></div>
+    </div>
+
+    <!-- Tela de carregamento -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-content">
+            <h1 class="stranger-title">STRANGER THINGS</h1>
+            <div class="loading-bar">
+                <div id="loading-progress" class="loading-fill"></div>
+            </div>
+            <p id="loading-text">Carregando assets...</p>
+        </div>
+    </div>
+
+    <!-- Interface de ligação -->
+    <div id="call-interface" class="screen hidden">
+        <div class="call-content">
+            <img id="dustin-image" src="assets/img/dustin-call.png" alt="Dustin Henderson">
+            <div class="call-info">
+                <h2>Dustin Henderson</h2>
+                <p class="call-status">Chamada recebida</p>
+            </div>
+            <button id="answer-call" class="call-button">Atender</button>
+        </div>
+    </div>
+
+    <!-- Controles de áudio -->
+    <div id="audio-controls" class="audio-controls hidden">
+        <button id="mute-button" class="audio-button">🔊</button>
+        <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="70">
+    </div>
+
+    <!-- Seta de navegação -->
+    <div id="navigation-arrow" class="navigation-arrow hidden">
+        <svg class="arrow-svg" viewBox="0 0 100 100">
+            <path d="M50 10 L80 50 L50 90 L50 70 L20 70 L20 30 L50 30 Z" fill="#ff6b6b"/>
+        </svg>
+        <div id="arrow-distance" class="arrow-distance">0m</div>
+        <div class="accuracy-bars">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+    </div>
+
+    <!-- Informações da missão -->
+    <div id="mission-info" class="mission-info-overlay">
+        <h3 id="mission-title">Carregando...</h3>
+        <p id="mission-description">Aguarde...</p>
+        <p id="distance-text">Distância: Calculando...</p>
+    </div>
+
+    <!-- Inventário -->
+    <div id="inventory" class="inventory">
+        <div class="inventory-header">
+            <h4>Inventário</h4>
+        </div>
+        <div class="inventory-items"></div>
+    </div>
+
+    <!-- Filtro do mundo invertido -->
+    <div id="upside-down-filter" class="upside-down-filter hidden">
+        <!-- Partículas e efeitos serão adicionados dinamicamente -->
+    </div>
+
+    <!-- Cena AR -->
+    <a-scene id="ar-scene" 
+             embedded 
+             arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best; maxDetectionRate: 60; canvasWidth: 640; canvasHeight: 480;"
+             vr-mode-ui="enabled: false"
+             class="hidden">
+        
+        <!-- Assets -->
+        <a-assets>
+            <a-asset-item id="bicicleta-will-model" src="assets/models/bicicleta-will.glb"></a-asset-item>
+            <a-asset-item id="castle-byers-model" src="src/models/castle_byers.glb"></a-asset-item>
+        </a-assets>
+
+        <!-- Câmera AR -->
+        <a-camera id="ar-camera" 
+                  gps-camera 
+                  rotation-reader
+                  look-controls-enabled="false"
+                  arjs-look-controls="smoothingFactor: 0.1">
+        </a-camera>
+    </a-scene>
+
+    <!-- Scripts do jogo -->
+    <script src="js/utils.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/permission-handler.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/location-manager.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/mission-manager.js"></script>
+    <script src="js/inventory-manager.js"></script>
+    <script src="js/upside-down-manager.js"></script>
+    <script src="js/game.js"></script>
+
+    <script>
+        let game = null;
+        let testStatus = document.getElementById('test-status');
+
+        function addStatus(message, type = 'info') {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `test-status status-${type}`;
+            statusDiv.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            testStatus.appendChild(statusDiv);
+            testStatus.scrollTop = testStatus.scrollHeight;
+            console.log(`[TEST] ${message}`);
+        }
+
+        async function initTest() {
+            try {
+                addStatus('Inicializando teste da Missão 5...', 'info');
+                
+                // Criar instância do jogo
+                game = new StrangerThingsGame();
+                await game.init();
+                
+                addStatus('Jogo inicializado com sucesso', 'success');
+                
+                // Configurar para Missão 5 diretamente
+                game.missionManager.startMission(5);
+                addStatus('Missão 5 ativada', 'success');
+                
+                // Atualizar UI
+                game.updateMissionUI(5);
+                
+                addStatus('Teste pronto! Use os botões para simular ações.', 'success');
+                
+            } catch (error) {
+                addStatus(`Erro na inicialização: ${error.message}`, 'error');
+            }
+        }
+
+        function simulateLocation() {
+            if (!game) {
+                addStatus('Inicialize o teste primeiro', 'error');
+                return;
+            }
+            
+            try {
+                // Coordenadas do Laboratório Nacional de Hawkins
+                const labLocation = {
+                    lat: -27.624056768580015,
+                    lng: -48.68124296486716,
+                    accuracy: 10
+                };
+                
+                addStatus(`Simulando chegada ao laboratório: ${labLocation.lat}, ${labLocation.lng}`, 'info');
+                
+                // Simular chegada ao local
+                game.handlePositionUpdate(labLocation);
+                game.handleTargetReached({ distance: 5 });
+                
+                addStatus('Localização simulada - AR deve estar ativo', 'success');
+                
+            } catch (error) {
+                addStatus(`Erro ao simular localização: ${error.message}`, 'error');
+            }
+        }
+
+        async function testImageTracking() {
+            if (!game) {
+                addStatus('Inicialize o teste primeiro', 'error');
+                return;
+            }
+            
+            try {
+                addStatus('Testando rastreamento de imagem bloco-h.jpg...', 'info');
+                
+                const mission5 = game.missionManager.getMission(5);
+                if (!mission5) {
+                    addStatus('Missão 5 não encontrada', 'error');
+                    return;
+                }
+                
+                // Ativar câmera AR
+                await game.arManager.startCamera();
+                addStatus('Câmera AR iniciada', 'success');
+                
+                // Iniciar rastreamento de imagem
+                await game.arManager.startImageTracking(mission5.arContent);
+                addStatus('Rastreamento de imagem iniciado para bloco-h.jpg', 'success');
+                
+                // Simular detecção do marcador
+                setTimeout(() => {
+                    addStatus('Simulando detecção do marcador bloco-h.jpg...', 'info');
+                    game.handleMarkerDetected(mission5.arContent);
+                    addStatus('Portal.gif deve estar visível e clicável', 'success');
+                }, 2000);
+                
+            } catch (error) {
+                addStatus(`Erro no rastreamento: ${error.message}`, 'error');
+            }
+        }
+
+        function testPortalClick() {
+            if (!game) {
+                addStatus('Inicialize o teste primeiro', 'error');
+                return;
+            }
+            
+            try {
+                addStatus('Simulando clique no portal...', 'info');
+                
+                // Simular clique no portal
+                game.handlePortalClick();
+                
+                addStatus('Clique no portal simulado - mundo invertido deve estar ativo', 'success');
+                
+                // Verificar se mundo invertido está ativo
+                setTimeout(() => {
+                    if (game.upsideDownManager && game.upsideDownManager.isUpsideDownActive()) {
+                        addStatus('✅ Mundo invertido ativado com sucesso!', 'success');
+                    } else {
+                        addStatus('❌ Mundo invertido não foi ativado', 'error');
+                    }
+                }, 1500);
+                
+            } catch (error) {
+                addStatus(`Erro ao simular clique no portal: ${error.message}`, 'error');
+            }
+        }
+
+        function testUpsideDown() {
+            if (!game || !game.upsideDownManager) {
+                addStatus('Inicialize o teste primeiro', 'error');
+                return;
+            }
+            
+            try {
+                addStatus('Testando sistema do mundo invertido...', 'info');
+                
+                // Ativar mundo invertido diretamente
+                game.upsideDownManager.activate();
+                
+                addStatus('Mundo invertido ativado manualmente', 'success');
+                
+                // Verificar status
+                const stats = game.upsideDownManager.getStats();
+                addStatus(`Status: Ativo=${stats.isActive}, Partículas=${stats.particleCount}/${stats.maxParticles}`, 'info');
+                
+            } catch (error) {
+                addStatus(`Erro no teste do mundo invertido: ${error.message}`, 'error');
+            }
+        }
+
+        function resetTest() {
+            try {
+                addStatus('Resetando teste...', 'info');
+                
+                if (game) {
+                    // Parar câmera AR
+                    if (game.arManager) {
+                        game.arManager.stopCamera();
+                    }
+                    
+                    // Desativar mundo invertido
+                    if (game.upsideDownManager) {
+                        game.upsideDownManager.deactivate();
+                    }
+                    
+                    // Limpar status
+                    game = null;
+                }
+                
+                // Limpar status de teste
+                testStatus.innerHTML = '';
+                
+                addStatus('Teste resetado. Clique em "Iniciar Teste" para começar novamente.', 'success');
+                
+            } catch (error) {
+                addStatus(`Erro ao resetar: ${error.message}`, 'error');
+            }
+        }
+
+        // Inicializar automaticamente quando a página carregar
+        window.addEventListener('load', () => {
+            addStatus('Página de teste carregada. Clique em "Iniciar Teste" para começar.', 'info');
+        });
+
+        // Log de eventos para debug
+        window.addEventListener('error', (event) => {
+            addStatus(`Erro JavaScript: ${event.error.message}`, 'error');
+        });
+    </script>
+</body>
+</html>

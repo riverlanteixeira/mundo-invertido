@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Image Tracking - Stranger Things AR</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+    </style>
+</head>
+<body>
+    <h1>Image Tracking System Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Pattern Files Test</h2>
+        <div id="pattern-test-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Asset Files Test</h2>
+        <div id="asset-test-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. AR Manager Methods Test</h2>
+        <div id="ar-methods-test-results"></div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script>
+        async function testPatternFiles() {
+            const results = document.getElementById('pattern-test-results');
+            const patterns = [
+                'assets/patterns/the-big-bang-theory.patt',
+                'assets/patterns/bloco-h.patt'
+            ];
+            
+            for (const pattern of patterns) {
+                try {
+                    const response = await fetch(pattern);
+                    if (response.ok) {
+                        results.innerHTML += `<div class="success">✓ ${pattern} - OK</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ ${pattern} - Not found (${response.status})</div>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="error">✗ ${pattern} - Error: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        async function testAssetFiles() {
+            const results = document.getElementById('asset-test-results');
+            const assets = [
+                'assets/img/the-big-bang-theory.jpg',
+                'assets/img/bloco-h.jpg',
+                'assets/gif/luzes-piscando.gif',
+                'assets/gif/portal.gif'
+            ];
+            
+            for (const asset of assets) {
+                try {
+                    const response = await fetch(asset, { method: 'HEAD' });
+                    if (response.ok) {
+                        results.innerHTML += `<div class="success">✓ ${asset} - OK</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ ${asset} - Not found (${response.status})</div>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="error">✗ ${asset} - Error: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        function testARManagerMethods() {
+            const results = document.getElementById('ar-methods-test-results');
+            
+            try {
+                // Test if ARManager class exists
+                if (typeof ARManager !== 'undefined') {
+                    results.innerHTML += `<div class="success">✓ ARManager class - OK</div>`;
+                    
+                    // Test if required methods exist
+                    const arManager = new ARManager();
+                    const requiredMethods = [
+                        'startImageTracking',
+                        'generatePatternFromImage',
+                        'scheduleDelayedAudio',
+                        'cancelDelayedAudio'
+                    ];
+                    
+                    for (const method of requiredMethods) {
+                        if (typeof arManager[method] === 'function') {
+                            results.innerHTML += `<div class="success">✓ ${method}() method - OK</div>`;
+                        } else {
+                            results.innerHTML += `<div class="error">✗ ${method}() method - Missing</div>`;
+                        }
+                    }
+                } else {
+                    results.innerHTML += `<div class="error">✗ ARManager class - Not found</div>`;
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ ARManager test - Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Run tests
+        document.addEventListener('DOMContentLoaded', async () => {
+            await testPatternFiles();
+            await testAssetFiles();
+            testARManagerMethods();
+        });
+    </script>
+</body>
+</html>

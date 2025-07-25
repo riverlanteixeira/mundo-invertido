@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Teste - Sistema Mundo Invertido</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div style="padding: 20px; background: #000; color: #fff; min-height: 100vh;">
+        <h1 style="color: #ff6b6b; text-align: center; margin-bottom: 30px;">
+            Teste do Sistema Mundo Invertido
+        </h1>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button id="activate-btn" style="
+                background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+                border: none;
+                color: white;
+                padding: 15px 30px;
+                font-size: 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                margin: 10px;
+            ">Ativar Mundo Invertido</button>
+            
+            <button id="deactivate-btn" style="
+                background: linear-gradient(135deg, #666, #888);
+                border: none;
+                color: white;
+                padding: 15px 30px;
+                font-size: 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                margin: 10px;
+            ">Desativar Mundo Invertido</button>
+            
+            <button id="debug-btn" style="
+                background: linear-gradient(135deg, #4CAF50, #66BB6A);
+                border: none;
+                color: white;
+                padding: 15px 30px;
+                font-size: 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                margin: 10px;
+            ">Toggle Debug</button>
+        </div>
+        
+        <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h3 style="color: #00ff00; margin-bottom: 15px;">Status do Sistema:</h3>
+            <div id="status-info" style="font-family: monospace; line-height: 1.6;">
+                <div>Estado: <span id="status-state">Carregando...</span></div>
+                <div>Partículas: <span id="status-particles">0</span></div>
+                <div>Animação: <span id="status-animation">Não</span></div>
+            </div>
+        </div>
+        
+        <div style="background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px;">
+            <h3 style="color: #ff6b6b; margin-bottom: 15px;">Instruções:</h3>
+            <ul style="line-height: 1.8;">
+                <li>Clique em "Ativar Mundo Invertido" para testar o sistema</li>
+                <li>Observe o filtro esverdeado aplicado à tela</li>
+                <li>Veja as partículas flutuantes em movimento</li>
+                <li>Note o indicador "MUNDO INVERTIDO" no topo</li>
+                <li>Use "Toggle Debug" para ver informações técnicas</li>
+                <li>O sistema deve persistir até ser desativado manualmente</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Filtro do mundo invertido -->
+    <div id="upside-down-filter" class="upside-down-filter hidden">
+        <!-- Os elementos serão criados dinamicamente pelo UpsideDownManager -->
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/upside-down-manager.js"></script>
+    
+    <script>
+        let upsideDownManager;
+        
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Inicializar o gerenciador
+                upsideDownManager = new UpsideDownManager();
+                
+                // Configurar botões
+                document.getElementById('activate-btn').addEventListener('click', () => {
+                    upsideDownManager.activate();
+                    updateStatus();
+                });
+                
+                document.getElementById('deactivate-btn').addEventListener('click', () => {
+                    upsideDownManager.deactivate();
+                    updateStatus();
+                });
+                
+                document.getElementById('debug-btn').addEventListener('click', () => {
+                    upsideDownManager.toggleDebugMode();
+                });
+                
+                // Atualizar status inicial
+                updateStatus();
+                
+                // Atualizar status a cada segundo
+                setInterval(updateStatus, 1000);
+                
+                console.log('Teste do mundo invertido inicializado com sucesso');
+                
+            } catch (error) {
+                console.error('Erro ao inicializar teste:', error);
+                document.getElementById('status-state').textContent = 'Erro: ' + error.message;
+                document.getElementById('status-state').style.color = '#ff6b6b';
+            }
+        });
+        
+        function updateStatus() {
+            if (!upsideDownManager) return;
+            
+            const stats = upsideDownManager.getStats();
+            
+            document.getElementById('status-state').textContent = stats.isActive ? 'ATIVO' : 'INATIVO';
+            document.getElementById('status-state').style.color = stats.isActive ? '#00ff00' : '#ff6b6b';
+            
+            document.getElementById('status-particles').textContent = `${stats.particleCount}/${stats.maxParticles}`;
+            document.getElementById('status-animation').textContent = stats.animationActive ? 'Sim' : 'Não';
+        }
+        
+        // Simular vibração para teste (caso não esteja em dispositivo móvel)
+        if (!navigator.vibrate) {
+            navigator.vibrate = function(pattern) {
+                console.log('Vibração simulada:', pattern);
+                return true;
+            };
+        }
+    </script>
+</body>
+</html>

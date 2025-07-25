@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mission 4 - Loja Melvald's</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        .warning { color: #ff9800; }
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #ff5252;
+        }
+        .coordinates {
+            font-family: monospace;
+            background: #222;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .inventory-display {
+            background: #222;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mission 4 Test - Loja Melvald's</h1>
+    
+    <div class="test-section">
+        <h2>1. Mission Configuration Test</h2>
+        <div id="mission-config-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Required Assets Test</h2>
+        <div id="assets-test-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. AR Collection Setup Test</h2>
+        <div id="ar-collection-results"></div>
+        <button onclick="testARCollectionSetup()">Test AR Collection Setup</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Item Collection Simulation</h2>
+        <div id="item-collection-results"></div>
+        <button onclick="simulateItemCollection('taco')">Collect Taco</button>
+        <button onclick="simulateItemCollection('gasolina')">Collect Gasolina</button>
+        <button onclick="clearInventory()">Clear Inventory</button>
+        <div class="inventory-display" id="inventory-display"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Mission Completion Test</h2>
+        <div id="mission-completion-results"></div>
+        <button onclick="testMissionCompletion()">Test Mission 4 Completion</button>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Navigation Test</h2>
+        <div id="navigation-results"></div>
+        <button onclick="testNavigation()">Test Navigation to Melvald's</button>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/mission-manager.js"></script>
+    <script src="js/location-manager.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/inventory-manager.js"></script>
+    <script src="js/game.js"></script>
+    <script>
+        let game = null;
+        
+        async function testMissionConfiguration() {
+            const results = document.getElementById('mission-config-results');
+            
+            try {
+                // Create game instance
+                game = new StrangerThingsGame();
+                await game.init();
+                
+                // Load mission configurations
+                game.loadMissionConfigurations();
+                
+                // Get Mission 4
+                const mission4 = game.missionManager.getMission(4);
+                
+                if (mission4) {
+                    results.innerHTML += `<div class="success">✓ Mission 4 found: ${mission4.name}</div>`;
+                    
+                    // Check location coordinates
+                    const expectedLat = -27.62568754766323;
+                    const expectedLng = -48.679824079211336;
+                    
+                    if (mission4.location.lat === expectedLat && mission4.location.lng === expectedLng) {
+                        results.innerHTML += `<div class="success">✓ Location coordinates correct</div>`;
+                        results.innerHTML += `<div class="info">Coordinates: <span class="coordinates">${expectedLat}, ${expectedLng}</span></div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Location coordinates incorrect</div>`;
+                        results.innerHTML += `<div class="error">Expected: <span class="coordinates">${expectedLat}, ${expectedLng}</span></div>`;
+                        results.innerHTML += `<div class="error">Got: <span class="coordinates">${mission4.location.lat}, ${mission4.location.lng}</span></div>`;
+                    }
+                    
+                    // Check mission type
+                    if (mission4.type === 'ar_collection') {
+                        results.innerHTML += `<div class="success">✓ Mission type correct: ${mission4.type}</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Mission type incorrect: ${mission4.type}</div>`;
+                    }
+                    
+                    // Check radius
+                    if (mission4.radius === 20) {
+                        results.innerHTML += `<div class="success">✓ Proximity radius correct: ${mission4.radius}m</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Proximity radius incorrect: ${mission4.radius}m</div>`;
+                    }
+                    
+                    // Check AR content
+                    if (mission4.arContent && mission4.arContent.type === 'collection') {
+                        results.innerHTML += `<div class="success">✓ AR content type correct: ${mission4.arContent.type}</div>`;
+                        
+                        // Check items
+                        const items = mission4.arContent.items;
+                        if (items && items.length === 2) {
+                            results.innerHTML += `<div class="success">✓ Correct number of items: ${items.length}</div>`;
+                            
+                            // Check taco item
+                            const taco = items.find(item => item.id === 'taco');
+                            if (taco && taco.image === 'assets/img/taco.png') {
+                                results.innerHTML += `<div class="success">✓ Taco item configured correctly</div>`;
+                            } else {
+                                results.innerHTML += `<div class="error">✗ Taco item configuration incorrect</div>`;
+                            }
+                            
+                            // Check gasolina item
+                            const gasolina = items.find(item => item.id === 'gasolina');
+                            if (gasolina && gasolina.image === 'assets/img/gasolina.png') {
+                                results.innerHTML += `<div class="success">✓ Gasolina item configured correctly</div>`;
+                            } else {
+                                results.innerHTML += `<div class="error">✗ Gasolina item configuration incorrect</div>`;
+                            }
+                            
+                        } else {
+                            results.innerHTML += `<div class="error">✗ Incorrect number of items: ${items ? items.length : 0}</div>`;
+                        }
+                    } else {
+                        results.innerHTML += `<div class="error">✗ AR content configuration incorrect</div>`;
+                    }
+                    
+                    // Check completion audio
+                    if (mission4.audio && mission4.audio.completion === 'sounds/call/dustin-missao-4-completa.wav') {
+                        results.innerHTML += `<div class="success">✓ Completion audio correct</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Completion audio incorrect</div>`;
+                    }
+                    
+                } else {
+                    results.innerHTML += `<div class="error">✗ Mission 4 not found</div>`;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing mission configuration: ${error.message}</div>`;
+                console.error('Mission configuration test error:', error);
+            }
+        }
+        
+        async function testRequiredAssets() {
+            const results = document.getElementById('assets-test-results');
+            const requiredAssets = [
+                'assets/img/taco.png',
+                'assets/img/gasolina.png',
+                'sounds/call/dustin-missao-4-completa.wav'
+            ];
+            
+            results.innerHTML = '<div class="info">Testing required assets...</div>';
+            
+            for (const asset of requiredAssets) {
+                try {
+                    const response = await fetch(asset, { method: 'HEAD' });
+                    if (response.ok) {
+                        results.innerHTML += `<div class="success">✓ ${asset} - Available</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ ${asset} - Not found (${response.status})</div>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="error">✗ ${asset} - Error: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        function testARCollectionSetup() {
+            const results = document.getElementById('ar-collection-results');
+            results.innerHTML = '<div class="info">Testing AR collection setup...</div>';
+            
+            try {
+                if (game && game.arManager) {
+                    const mission4 = game.missionManager.getMission(4);
+                    
+                    if (mission4) {
+                        // Test AR collection setup
+                        results.innerHTML += '<div class="success">✓ Mission 4 found for AR setup</div>';
+                        results.innerHTML += `<div class="info">AR Content Type: ${mission4.arContent.type}</div>`;
+                        results.innerHTML += `<div class="info">Items to collect: ${mission4.arContent.items.length}</div>`;
+                        
+                        // List items
+                        mission4.arContent.items.forEach(item => {
+                            results.innerHTML += `<div class="info">- ${item.id}: ${item.image} at position [${item.position.join(', ')}]</div>`;
+                        });
+                        
+                        // Test if AR manager can handle collection
+                        if (typeof game.arManager.showCollectionItems === 'function') {
+                            results.innerHTML += '<div class="success">✓ AR Manager has showCollectionItems method</div>';
+                        } else {
+                            results.innerHTML += '<div class="error">✗ AR Manager missing showCollectionItems method</div>';
+                        }
+                        
+                    } else {
+                        results.innerHTML += '<div class="error">✗ Mission 4 not found</div>';
+                    }
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or AR Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing AR collection setup: ${error.message}</div>`;
+                console.error('AR collection setup test error:', error);
+            }
+        }
+        
+        function simulateItemCollection(itemId) {
+            const results = document.getElementById('item-collection-results');
+            
+            try {
+                if (game && game.inventoryManager) {
+                    // Set current mission to 4
+                    game.missionManager.startMission(4);
+                    
+                    // Simulate item collection
+                    const added = game.inventoryManager.addItem(itemId);
+                    
+                    if (added) {
+                        results.innerHTML += `<div class="success">✓ ${itemId} collected successfully</div>`;
+                        
+                        // Test the game's collectItem method
+                        game.collectItem(itemId);
+                        
+                        // Update inventory display
+                        updateInventoryDisplay();
+                        
+                        // Check if mission should be completed
+                        const mission4 = game.missionManager.getMission(4);
+                        const requiredItems = mission4.arContent.items.map(item => item.id);
+                        const hasAllItems = requiredItems.every(item => game.inventoryManager.hasItem(item));
+                        
+                        if (hasAllItems) {
+                            results.innerHTML += '<div class="success">✓ All items collected! Mission should complete.</div>';
+                        } else {
+                            const remaining = requiredItems.filter(item => !game.inventoryManager.hasItem(item));
+                            results.innerHTML += `<div class="info">Still need: ${remaining.join(', ')}</div>`;
+                        }
+                        
+                    } else {
+                        results.innerHTML += `<div class="warning">⚠ ${itemId} was already in inventory</div>`;
+                    }
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or Inventory Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error collecting ${itemId}: ${error.message}</div>`;
+                console.error('Item collection error:', error);
+            }
+        }
+        
+        function clearInventory() {
+            const results = document.getElementById('item-collection-results');
+            
+            try {
+                if (game && game.inventoryManager) {
+                    game.inventoryManager.clear();
+                    results.innerHTML += '<div class="info">Inventory cleared</div>';
+                    updateInventoryDisplay();
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or Inventory Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error clearing inventory: ${error.message}</div>`;
+                console.error('Clear inventory error:', error);
+            }
+        }
+        
+        function updateInventoryDisplay() {
+            const display = document.getElementById('inventory-display');
+            
+            if (game && game.inventoryManager) {
+                const inventory = game.inventoryManager.getItems();
+                const stats = game.inventoryManager.getStats();
+                
+                display.innerHTML = `
+                    <strong>Current Inventory (${stats.total} items):</strong><br>
+                    ${inventory.length > 0 ? inventory.map(item => {
+                        const info = game.inventoryManager.getItemInfo(item);
+                        return `- ${info ? info.name : item} (${item})`;
+                    }).join('<br>') : 'Empty'}
+                    <br><br>
+                    <strong>Stats:</strong><br>
+                    Weapons: ${stats.weapons}, Consumables: ${stats.consumables}, Clues: ${stats.clues}
+                `;
+            }
+        }
+        
+        function testNavigation() {
+            const results = document.getElementById('navigation-results');
+            results.innerHTML = '<div class="info">Testing navigation to Melvald\'s...</div>';
+            
+            try {
+                if (game && game.locationManager) {
+                    const mission4 = game.missionManager.getMission(4);
+                    
+                    if (mission4) {
+                        // Set target for Mission 4
+                        game.locationManager.setTarget(
+                            mission4.location.lat,
+                            mission4.location.lng,
+                            mission4.radius
+                        );
+                        
+                        results.innerHTML += '<div class="success">✓ Navigation target set</div>';
+                        results.innerHTML += `<div class="info">Target: <span class="coordinates">${mission4.location.lat}, ${mission4.location.lng}</span></div>`;
+                        results.innerHTML += `<div class="info">Radius: ${mission4.radius}m</div>`;
+                        
+                        // Check navigation state
+                        const navStats = game.locationManager.getNavigationStats();
+                        if (navStats && navStats.isNavigating) {
+                            results.innerHTML += '<div class="success">✓ Navigation state active</div>';
+                        } else {
+                            results.innerHTML += '<div class="warning">⚠ Navigation state not active</div>';
+                        }
+                        
+                    } else {
+                        results.innerHTML += '<div class="error">✗ Mission 4 not found</div>';
+                    }
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or Location Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing navigation: ${error.message}</div>`;
+                console.error('Navigation test error:', error);
+            }
+        }
+        
+        function testMissionCompletion() {
+            const results = document.getElementById('mission-completion-results');
+            results.innerHTML = '<div class="info">Testing Mission 4 completion...</div>';
+            
+            try {
+                if (game && game.missionManager) {
+                    // Set current mission to 4
+                    game.missionManager.startMission(4);
+                    
+                    // Add both required items to inventory
+                    game.inventoryManager.addItem('taco');
+                    game.inventoryManager.addItem('gasolina');
+                    
+                    results.innerHTML += '<div class="success">✓ Both items added to inventory</div>';
+                    
+                    // Complete Mission 4
+                    game.missionManager.completeMission(4);
+                    
+                    results.innerHTML += '<div class="success">✓ Mission 4 completion triggered</div>';
+                    
+                    // Check if next mission (5) is started
+                    setTimeout(() => {
+                        const currentMission = game.missionManager.getCurrentMission();
+                        if (currentMission && currentMission.id === 5) {
+                            results.innerHTML += '<div class="success">✓ Advanced to Mission 5 (Laboratório Nacional de Hawkins)</div>';
+                        } else {
+                            results.innerHTML += '<div class="warning">⚠ Mission advancement may not have worked correctly</div>';
+                        }
+                    }, 1000);
+                    
+                    results.innerHTML += '<div class="info">Audio should play: dustin-missao-4-completa.wav</div>';
+                    results.innerHTML += '<div class="info">Check console for detailed logs</div>';
+                    
+                    // Update inventory display
+                    updateInventoryDisplay();
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or Mission Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing mission completion: ${error.message}</div>`;
+                console.error('Mission completion test error:', error);
+            }
+        }
+        
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Starting Mission 4 tests...');
+            await testMissionConfiguration();
+            await testRequiredAssets();
+            updateInventoryDisplay();
+        });
+    </script>
+</body>
+</html>

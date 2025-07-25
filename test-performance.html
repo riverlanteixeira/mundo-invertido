@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Performance - Stranger Things AR</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #000;
+            color: #fff;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #111;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            background: #222;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 5px;
+        }
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #ff5252;
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success { background: #2e7d32; }
+        .status.warning { background: #f57c00; }
+        .status.error { background: #d32f2f; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎮 Teste de Performance - Stranger Things AR</h1>
+        
+        <div class="test-section">
+            <h2>📊 Métricas de Performance</h2>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value" id="fps-value">--</div>
+                    <div class="metric-label">FPS</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="memory-value">--</div>
+                    <div class="metric-label">Memória (MB)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="lod-value">--</div>
+                    <div class="metric-label">LOD Atual</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="cache-value">--</div>
+                    <div class="metric-label">Assets em Cache</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 Controles de Teste</h2>
+            <button onclick="initPerformanceManager()">Inicializar Performance Manager</button>
+            <button onclick="testAssetCompression()">Testar Compressão de Assets</button>
+            <button onclick="testLODSystem()">Testar Sistema LOD</button>
+            <button onclick="testMemoryOptimization()">Testar Otimização de Memória</button>
+            <button onclick="simulateLoad()">Simular Carga Alta</button>
+            <button onclick="clearCache()">Limpar Cache</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📈 Status do Sistema</h2>
+            <div id="status-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Log de Atividades</h2>
+            <div class="log" id="log-container"></div>
+        </div>
+    </div>
+
+    <!-- Scripts necessários -->
+    <script src="js/utils.js"></script>
+    <script src="js/performance-manager.js"></script>
+
+    <script>
+        let performanceManager = null;
+        let metricsInterval = null;
+
+        // Função para adicionar logs
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Função para atualizar status
+        function updateStatus(message, type = 'success') {
+            const statusContainer = document.getElementById('status-container');
+            const status = document.createElement('div');
+            status.className = `status ${type}`;
+            status.textContent = message;
+            statusContainer.appendChild(status);
+            
+            // Remover status antigos (manter apenas os últimos 3)
+            while (statusContainer.children.length > 3) {
+                statusContainer.removeChild(statusContainer.firstChild);
+            }
+        }
+
+        // Inicializar Performance Manager
+        async function initPerformanceManager() {
+            try {
+                addLog('Inicializando Performance Manager...');
+                performanceManager = new PerformanceManager();
+                await performanceManager.init();
+                
+                updateStatus('Performance Manager inicializado com sucesso!', 'success');
+                addLog('Performance Manager inicializado com sucesso');
+                
+                // Iniciar monitoramento de métricas
+                startMetricsMonitoring();
+                
+            } catch (error) {
+                updateStatus(`Erro ao inicializar: ${error.message}`, 'error');
+                addLog(`Erro: ${error.message}`, 'error');
+            }
+        }
+
+        // Monitorar métricas em tempo real
+        function startMetricsMonitoring() {
+            if (metricsInterval) clearInterval(metricsInterval);
+            
+            metricsInterval = setInterval(() => {
+                if (performanceManager) {
+                    const metrics = performanceManager.getPerformanceMetrics();
+                    const status = performanceManager.getOptimizationStatus();
+                    
+                    document.getElementById('fps-value').textContent = metrics.fps || '--';
+                    document.getElementById('memory-value').textContent = metrics.memoryUsage || '--';
+                    document.getElementById('lod-value').textContent = status.lodLevel || '--';
+                    document.getElementById('cache-value').textContent = status.cacheSize || '--';
+                }
+            }, 1000);
+        }
+
+        // Testar compressão de assets
+        async function testAssetCompression() {
+            if (!performanceManager) {
+                updateStatus('Performance Manager não inicializado', 'error');
+                return;
+            }
+
+            try {
+                addLog('Testando compressão de assets...');
+                
+                // Testar compressão de modelo 3D
+                const modelUrl = 'assets/models/bicicleta-will.glb';
+                addLog(`Comprimindo modelo: ${modelUrl}`);
+                const compressedModel = await performanceManager.compressAsset(modelUrl, 'model');
+                addLog(`Modelo comprimido: ${compressedModel}`);
+                
+                // Testar compressão de imagem
+                const imageUrl = 'assets/img/taco.png';
+                addLog(`Comprimindo imagem: ${imageUrl}`);
+                const compressedImage = await performanceManager.compressAsset(imageUrl, 'image');
+                addLog(`Imagem comprimida: ${compressedImage}`);
+                
+                updateStatus('Compressão de assets testada com sucesso', 'success');
+                
+            } catch (error) {
+                updateStatus(`Erro na compressão: ${error.message}`, 'error');
+                addLog(`Erro na compressão: ${error.message}`, 'error');
+            }
+        }
+
+        // Testar sistema LOD
+        function testLODSystem() {
+            if (!performanceManager) {
+                updateStatus('Performance Manager não inicializado', 'error');
+                return;
+            }
+
+            addLog('Testando sistema LOD...');
+            
+            // Testar diferentes distâncias
+            const distances = [5, 25, 75, 150];
+            
+            distances.forEach((distance, index) => {
+                setTimeout(() => {
+                    performanceManager.updateLOD(distance);
+                    addLog(`LOD atualizado para distância ${distance}m`);
+                    
+                    if (index === distances.length - 1) {
+                        updateStatus('Sistema LOD testado com sucesso', 'success');
+                    }
+                }, index * 2000);
+            });
+        }
+
+        // Testar otimização de memória
+        async function testMemoryOptimization() {
+            if (!performanceManager) {
+                updateStatus('Performance Manager não inicializado', 'error');
+                return;
+            }
+
+            try {
+                addLog('Testando otimização de memória...');
+                
+                await performanceManager.optimizeMemoryUsage();
+                
+                updateStatus('Otimização de memória executada', 'success');
+                addLog('Otimização de memória concluída');
+                
+            } catch (error) {
+                updateStatus(`Erro na otimização: ${error.message}`, 'error');
+                addLog(`Erro na otimização: ${error.message}`, 'error');
+            }
+        }
+
+        // Simular carga alta
+        function simulateLoad() {
+            if (!performanceManager) {
+                updateStatus('Performance Manager não inicializado', 'error');
+                return;
+            }
+
+            addLog('Simulando carga alta no sistema...');
+            
+            // Simular uso intensivo de CPU
+            const startTime = Date.now();
+            const duration = 5000; // 5 segundos
+            
+            function intensiveTask() {
+                const currentTime = Date.now();
+                if (currentTime - startTime < duration) {
+                    // Operações intensivas
+                    for (let i = 0; i < 100000; i++) {
+                        Math.random() * Math.random();
+                    }
+                    requestAnimationFrame(intensiveTask);
+                } else {
+                    addLog('Simulação de carga concluída');
+                    updateStatus('Carga alta simulada - verifique otimizações automáticas', 'warning');
+                }
+            }
+            
+            requestAnimationFrame(intensiveTask);
+        }
+
+        // Limpar cache
+        function clearCache() {
+            if (!performanceManager) {
+                updateStatus('Performance Manager não inicializado', 'error');
+                return;
+            }
+
+            performanceManager.aggressiveCleanup();
+            addLog('Cache limpo agressivamente');
+            updateStatus('Cache limpo com sucesso', 'success');
+        }
+
+        // Inicializar automaticamente quando a página carregar
+        window.addEventListener('load', () => {
+            addLog('Página de teste carregada');
+            updateStatus('Pronto para testes - clique em "Inicializar Performance Manager"', 'warning');
+        });
+
+        // Limpar intervalos quando sair da página
+        window.addEventListener('beforeunload', () => {
+            if (metricsInterval) clearInterval(metricsInterval);
+        });
+    </script>
+</body>
+</html>

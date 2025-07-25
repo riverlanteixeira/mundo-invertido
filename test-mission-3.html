@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mission 3 - Fuga do Demogorgon</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        .warning { color: #ff9800; }
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #ff5252;
+        }
+        .coordinates {
+            font-family: monospace;
+            background: #222;
+            padding: 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mission 3 Test - Fuga do Demogorgon</h1>
+    
+    <div class="test-section">
+        <h2>1. Mission Configuration Test</h2>
+        <div id="mission-config-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Required Assets Test</h2>
+        <div id="assets-test-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Navigation Test</h2>
+        <div id="navigation-results"></div>
+        <button onclick="testNavigation()">Test Navigation to Escape Location</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Target Reached Simulation</h2>
+        <div id="target-reached-results"></div>
+        <button onclick="simulateTargetReached()">Simulate Arrival at Escape Location</button>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Mission Completion Test</h2>
+        <div id="mission-completion-results"></div>
+        <button onclick="testMissionCompletion()">Test Mission 3 Completion</button>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/mission-manager.js"></script>
+    <script src="js/location-manager.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/game.js"></script>
+    <script>
+        let game = null;
+        
+        async function testMissionConfiguration() {
+            const results = document.getElementById('mission-config-results');
+            
+            try {
+                // Create game instance
+                game = new StrangerThingsGame();
+                await game.init();
+                
+                // Load mission configurations
+                game.loadMissionConfigurations();
+                
+                // Get Mission 3
+                const mission3 = game.missionManager.getMission(3);
+                
+                if (mission3) {
+                    results.innerHTML += `<div class="success">✓ Mission 3 found: ${mission3.name}</div>`;
+                    
+                    // Check location coordinates
+                    const expectedLat = -27.630111492213196;
+                    const expectedLng = -48.67959126452254;
+                    
+                    if (mission3.location.lat === expectedLat && mission3.location.lng === expectedLng) {
+                        results.innerHTML += `<div class="success">✓ Location coordinates correct</div>`;
+                        results.innerHTML += `<div class="info">Coordinates: <span class="coordinates">${expectedLat}, ${expectedLng}</span></div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Location coordinates incorrect</div>`;
+                        results.innerHTML += `<div class="error">Expected: <span class="coordinates">${expectedLat}, ${expectedLng}</span></div>`;
+                        results.innerHTML += `<div class="error">Got: <span class="coordinates">${mission3.location.lat}, ${mission3.location.lng}</span></div>`;
+                    }
+                    
+                    // Check mission type
+                    if (mission3.type === 'navigation') {
+                        results.innerHTML += `<div class="success">✓ Mission type correct: ${mission3.type}</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Mission type incorrect: ${mission3.type}</div>`;
+                    }
+                    
+                    // Check radius
+                    if (mission3.radius === 20) {
+                        results.innerHTML += `<div class="success">✓ Proximity radius correct: ${mission3.radius}m</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Proximity radius incorrect: ${mission3.radius}m</div>`;
+                    }
+                    
+                    // Check completion audio
+                    if (mission3.audio && mission3.audio.completion === 'sounds/call/dustin-missao-3-completa.wav') {
+                        results.innerHTML += `<div class="success">✓ Completion audio correct</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ Completion audio incorrect</div>`;
+                    }
+                    
+                    // Check description
+                    if (mission3.description === 'Fuja para local seguro') {
+                        results.innerHTML += `<div class="success">✓ Mission description correct</div>`;
+                    } else {
+                        results.innerHTML += `<div class="warning">⚠ Mission description: ${mission3.description}</div>`;
+                    }
+                    
+                } else {
+                    results.innerHTML += `<div class="error">✗ Mission 3 not found</div>`;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing mission configuration: ${error.message}</div>`;
+                console.error('Mission configuration test error:', error);
+            }
+        }
+        
+        async function testRequiredAssets() {
+            const results = document.getElementById('assets-test-results');
+            const requiredAssets = [
+                'sounds/call/dustin-missao-3-completa.wav'
+            ];
+            
+            results.innerHTML = '<div class="info">Testing required assets...</div>';
+            
+            for (const asset of requiredAssets) {
+                try {
+                    const response = await fetch(asset, { method: 'HEAD' });
+                    if (response.ok) {
+                        results.innerHTML += `<div class="success">✓ ${asset} - Available</div>`;
+                    } else {
+                        results.innerHTML += `<div class="error">✗ ${asset} - Not found (${response.status})</div>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="error">✗ ${asset} - Error: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        function testNavigation() {
+            const results = document.getElementById('navigation-results');
+            results.innerHTML = '<div class="info">Testing navigation to escape location...</div>';
+            
+            try {
+                if (game && game.locationManager) {
+                    const mission3 = game.missionManager.getMission(3);
+                    
+                    if (mission3) {
+                        // Set target for Mission 3
+                        game.locationManager.setTarget(
+                            mission3.location.lat,
+                            mission3.location.lng,
+                            mission3.radius
+                        );
+                        
+                        results.innerHTML += '<div class="success">✓ Navigation target set</div>';
+                        results.innerHTML += `<div class="info">Target: <span class="coordinates">${mission3.location.lat}, ${mission3.location.lng}</span></div>`;
+                        results.innerHTML += `<div class="info">Radius: ${mission3.radius}m</div>`;
+                        
+                        // Check navigation state
+                        const navStats = game.locationManager.getNavigationStats();
+                        if (navStats && navStats.isNavigating) {
+                            results.innerHTML += '<div class="success">✓ Navigation state active</div>';
+                        } else {
+                            results.innerHTML += '<div class="warning">⚠ Navigation state not active</div>';
+                        }
+                        
+                    } else {
+                        results.innerHTML += '<div class="error">✗ Mission 3 not found</div>';
+                    }
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or Location Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing navigation: ${error.message}</div>`;
+                console.error('Navigation test error:', error);
+            }
+        }
+        
+        function simulateTargetReached() {
+            const results = document.getElementById('target-reached-results');
+            results.innerHTML = '<div class="info">Simulating arrival at escape location...</div>';
+            
+            try {
+                if (game && game.locationManager) {
+                    const mission3 = game.missionManager.getMission(3);
+                    
+                    if (mission3) {
+                        // Simulate target reached event
+                        const targetReachedData = {
+                            target: mission3.location,
+                            position: {
+                                lat: mission3.location.lat,
+                                lng: mission3.location.lng,
+                                accuracy: 5
+                            },
+                            distance: 10 // Within 20m radius
+                        };
+                        
+                        // Trigger the target reached handler
+                        game.handleTargetReached(targetReachedData);
+                        
+                        results.innerHTML += '<div class="success">✓ Target reached event simulated</div>';
+                        results.innerHTML += '<div class="info">Check console for detailed logs</div>';
+                        results.innerHTML += '<div class="info">Mission should complete automatically for navigation type</div>';
+                        
+                    } else {
+                        results.innerHTML += '<div class="error">✗ Mission 3 not found</div>';
+                    }
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or Location Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error simulating target reached: ${error.message}</div>`;
+                console.error('Target reached simulation error:', error);
+            }
+        }
+        
+        function testMissionCompletion() {
+            const results = document.getElementById('mission-completion-results');
+            results.innerHTML = '<div class="info">Testing Mission 3 completion...</div>';
+            
+            try {
+                if (game && game.missionManager) {
+                    // Set current mission to 3
+                    game.missionManager.startMission(3);
+                    
+                    // Complete Mission 3
+                    game.missionManager.completeMission(3);
+                    
+                    results.innerHTML += '<div class="success">✓ Mission 3 completion triggered</div>';
+                    
+                    // Check if next mission (4) is started
+                    setTimeout(() => {
+                        const currentMission = game.missionManager.getCurrentMission();
+                        if (currentMission && currentMission.id === 4) {
+                            results.innerHTML += '<div class="success">✓ Advanced to Mission 4 (Loja Melvald\'s)</div>';
+                        } else {
+                            results.innerHTML += '<div class="warning">⚠ Mission advancement may not have worked correctly</div>';
+                        }
+                    }, 1000);
+                    
+                    results.innerHTML += '<div class="info">Audio should play: dustin-missao-3-completa.wav</div>';
+                    results.innerHTML += '<div class="info">Check console for detailed logs</div>';
+                    
+                } else {
+                    results.innerHTML += '<div class="error">✗ Game or Mission Manager not initialized</div>';
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="error">✗ Error testing mission completion: ${error.message}</div>`;
+                console.error('Mission completion test error:', error);
+            }
+        }
+        
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Starting Mission 3 tests...');
+            await testMissionConfiguration();
+            await testRequiredAssets();
+        });
+    </script>
+</body>
+</html>

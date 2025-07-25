@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Teste Missão 8 - Resgate do Will</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
+</head>
+<body>
+    <div id="test-info" style="position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; z-index: 1000; font-family: monospace; font-size: 12px;">
+        <h3>Teste Missão 8: Resgate do Will</h3>
+        <p>Status: <span id="test-status">Inicializando...</span></p>
+        <p>Localização: Casa do Will (-27.630903, -48.679746)</p>
+        <p>Rastreamento: the-big-bang-theory.jpg → castle_byers.glb</p>
+        <p>Áudio: dustin-missao-8-completa.wav</p>
+        <p>Ação especial: game_complete</p>
+        <button id="simulate-location" style="margin-top: 10px;">Simular Chegada</button>
+        <button id="simulate-tracking" style="margin-top: 5px;">Simular Rastreamento</button>
+        <button id="complete-mission" style="margin-top: 5px;">Completar Missão</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen active">
+        <!-- Navigation Arrow -->
+        <div id="navigation-arrow" class="navigation-arrow hidden">
+            <div class="arrow-container">
+                <svg class="arrow-svg" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#ff8e8e;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <path class="arrow-path" d="M50 5 L85 45 L65 45 L65 85 L35 85 L35 45 L15 45 Z" 
+                          fill="url(#arrowGradient)" />
+                </svg>
+                <div class="distance-indicator">
+                    <span id="arrow-distance">Calculando...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AR Scene -->
+        <a-scene
+            id="ar-scene"
+            embedded
+            arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; trackingMethod: best; maxDetectionRate: 60; canvasWidth: 640; canvasHeight: 480;"
+            vr-mode-ui="enabled: false"
+            renderer="logarithmicDepthBuffer: true; antialias: true; colorManagement: true;"
+            device-orientation-permission-ui="enabled: false">
+            
+            <a-assets>
+                <a-asset-item id="castle-byers-model" src="src/models/castle_byers.glb"></a-asset-item>
+            </a-assets>
+            
+            <a-camera
+                id="ar-camera"
+                gps-camera
+                rotation-reader
+                look-controls="enabled: false"
+                wasd-controls="enabled: false">
+            </a-camera>
+        </a-scene>
+
+        <!-- Game UI -->
+        <div id="game-ui">
+            <div id="mission-info" class="mission-panel">
+                <h3 id="mission-title">Resgate do Will</h3>
+                <p id="mission-description">Encontre Will no Castelo Byers</p>
+            </div>
+            <div id="distance-info" class="distance-panel">
+                <span id="distance-text">Vá para a casa do Will</span>
+            </div>
+        </div>
+
+        <!-- Upside Down Filter (should be active) -->
+        <div id="upside-down-filter" class="upside-down-filter">
+            <div class="particles-overlay"></div>
+        </div>
+    </div>
+
+    <!-- Game Completion Screen -->
+    <div id="completion-screen" class="screen">
+        <div class="completion-content">
+            <h1 class="stranger-title">MISSÃO COMPLETA</h1>
+            <div class="completion-message">
+                <h2>Will foi resgatado!</h2>
+                <p>Você completou todas as missões e salvou Hawkins do Demogorgon.</p>
+                <div class="completion-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Missões Completadas:</span>
+                        <span class="stat-value">8/8</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Itens Coletados:</span>
+                        <span class="stat-value" id="items-collected">2</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Demogorgons Derrotados:</span>
+                        <span class="stat-value">1</span>
+                    </div>
+                </div>
+                <div class="completion-actions">
+                    <button id="play-again" class="game-button">Jogar Novamente</button>
+                    <button id="share-victory" class="game-button secondary">Compartilhar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/game-state.js"></script>
+    <script src="js/permission-handler.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/location-manager.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/mission-manager.js"></script>
+    <script src="js/inventory-manager.js"></script>
+    <script src="js/upside-down-manager.js"></script>
+    <script src="js/game.js"></script>
+
+    <script>
+        // Test script for Mission 8
+        let game;
+        let testStatus = document.getElementById('test-status');
+
+        async function initTest() {
+            try {
+                testStatus.textContent = 'Inicializando jogo...';
+                
+                // Initialize game
+                game = new StrangerThingsGame();
+                await game.init();
+                
+                // Set up mission 8 directly
+                game.missionManager.startMission(8);
+                game.updateMissionUI(8);
+                
+                // Enable upside down mode (should be active from previous missions)
+                game.upsideDownManager.enable();
+                
+                // Set target location
+                const mission8 = game.missionManager.getMission(8);
+                game.locationManager.setTarget(
+                    mission8.location.lat,
+                    mission8.location.lng,
+                    mission8.radius
+                );
+                
+                // Start AR camera
+                await game.arManager.startCamera();
+                
+                testStatus.textContent = 'Pronto - Missão 8 ativa';
+                
+            } catch (error) {
+                testStatus.textContent = `Erro: ${error.message}`;
+                console.error('Test initialization error:', error);
+            }
+        }
+
+        // Test buttons
+        document.getElementById('simulate-location').addEventListener('click', () => {
+            testStatus.textContent = 'Simulando chegada na casa do Will...';
+            
+            // Simulate arriving at Will's house
+            const mission8 = game.missionManager.getMission(8);
+            game.locationManager.emit('targetReached', mission8);
+            
+            // This should activate image tracking
+            game.activateMissionAR(mission8);
+            
+            testStatus.textContent = 'Chegou na casa do Will - procure a imagem!';
+        });
+
+        document.getElementById('simulate-tracking').addEventListener('click', () => {
+            testStatus.textContent = 'Simulando detecção de imagem...';
+            
+            // Simulate image tracking detection
+            const mission8 = game.missionManager.getMission(8);
+            const arContent = mission8.arContent;
+            
+            // Trigger marker detection
+            game.handleMarkerDetected(arContent);
+            
+            testStatus.textContent = 'Imagem detectada - modelo 3D exibido!';
+        });
+
+        document.getElementById('complete-mission').addEventListener('click', () => {
+            testStatus.textContent = 'Completando missão final...';
+            
+            // Complete mission 8
+            game.missionManager.completeMission(8);
+            
+            testStatus.textContent = 'Missão 8 completada - jogo finalizado!';
+        });
+
+        // Initialize test when page loads
+        window.addEventListener('load', initTest);
+    </script>
+</body>
+</html>

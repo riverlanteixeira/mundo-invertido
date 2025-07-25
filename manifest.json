@@ -2,7 +2,7 @@
   "name": "Stranger Things AR Game",
   "short_name": "ST AR Game",
   "description": "Jogo de Realidade Aumentada baseado na série Stranger Things",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#000000",
@@ -23,6 +23,6 @@
   ],
   "categories": ["games", "entertainment"],
   "lang": "pt-BR",
-  "scope": "/",
+  "scope": "./",
   "prefer_related_applications": false
 }

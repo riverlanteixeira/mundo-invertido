@@ -1,0 +1,32 @@
+{
+  "name": "stranger-things-ar-game",
+  "version": "1.0.0",
+  "description": "Jogo de Realidade Aumentada baseado na série Stranger Things",
+  "main": "index.html",
+  "scripts": {
+    "build": "node build.js",
+    "test": "cd tests && npm test",
+    "test:production": "node test-production.js",
+    "dev": "python -m http.server 8000",
+    "serve": "python -m http.server 8000",
+    "deploy": "npm run build && npm run test:production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/username/stranger-things-ar-game.git"
+  },
+  "keywords": [
+    "stranger-things",
+    "ar",
+    "augmented-reality",
+    "pwa",
+    "game",
+    "webxr"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/username/stranger-things-ar-game/issues"
+  },
+  "homepage": "https://username.github.io/stranger-things-ar-game/"
+}
