@@ -1295,6 +1295,10 @@
             let callStartTime = null;
             let callTimerInterval = null;
             let vibrationInterval = null;
+            // Handlers/timeouts para gerenciar corretamente o áudio da chamada
+            let dustinAudioEndedHandler = null;
+            let dustinAudioErrorHandler = null;
+            let dustinAudioTimeout = null;
             let ringtonePlaying = false;
 
             // Definição duplicada removida
@@ -1402,25 +1406,65 @@
                 callStartTime = Date.now();
                 startCallTimer();
 
+                // Remover listeners antigos caso existam
+                if (dustinAudioEndedHandler && dustinAudio && dustinAudio.removeEventListener) {
+                    try { dustinAudio.removeEventListener('ended', dustinAudioEndedHandler); } catch (e) {}
+                }
+                if (dustinAudioErrorHandler && dustinAudio && dustinAudio.removeEventListener) {
+                    try { dustinAudio.removeEventListener('error', dustinAudioErrorHandler); } catch (e) {}
+                }
+
+                // Definir handlers nomeados para permitir remoção limpa
+                dustinAudioEndedHandler = () => {
+                    callStatus.innerText = "Chamada finalizada";
+                    // Limpar timeout fallback se existir
+                    if (dustinAudioTimeout) {
+                        clearTimeout(dustinAudioTimeout);
+                        dustinAudioTimeout = null;
+                    }
+                    setTimeout(endCall, 1500);
+                };
+
+                dustinAudioErrorHandler = () => {
+                    callStatus.innerText = "Erro no áudio, finalizando...";
+                    if (dustinAudioTimeout) {
+                        clearTimeout(dustinAudioTimeout);
+                        dustinAudioTimeout = null;
+                    }
+                    setTimeout(endCall, 2000);
+                };
+
+                // Fallback: garantir que a chamada termine mesmo que 'ended' não dispare
+                const setupFallbackTimeout = () => {
+                    try {
+                        if (dustinAudio && !isNaN(dustinAudio.duration) && isFinite(dustinAudio.duration) && dustinAudio.duration > 0) {
+                            // duração em ms + 2s de segurança
+                            dustinAudioTimeout = setTimeout(() => {
+                                console.warn('Fallback: timeout de fim de áudio atingido, finalizando chamada.');
+                                dustinAudioEndedHandler();
+                            }, (dustinAudio.duration * 1000) + 2000);
+                        }
+                    } catch (e) {
+                        console.warn('Não foi possível configurar fallback de timeout do áudio:', e);
+                    }
+                };
+
                 const playAudio = () => {
                     dustinAudio.play().catch(error => {
                         console.error('Erro ao reproduzir áudio:', error);
                         callStatus.innerText = "Áudio indisponível - continuando...";
                         setTimeout(endCall, 3000);
                     });
+                    // Agendar fallback após iniciar reprodução
+                    setupFallbackTimeout();
                 };
 
                 if (dustinAudio.readyState >= 2) playAudio();
                 else dustinAudio.addEventListener('canplaythrough', playAudio, { once: true });
 
-                dustinAudio.addEventListener('ended', () => {
-                    callStatus.innerText = "Chamada finalizada";
-                    setTimeout(endCall, 1500);
-                });
-                dustinAudio.addEventListener('error', () => {
-                    callStatus.innerText = "Erro no áudio, finalizando...";
-                    setTimeout(endCall, 2000);
-                });
+                // Anexar handlers nomeados
+                dustinAudio.addEventListener('ended', dustinAudioEndedHandler);
+                dustinAudio.addEventListener('error', dustinAudioErrorHandler);
             }
 
             function startCallTimer() {
@@ -1460,9 +1504,26 @@
                 if (dustinAudio) {
                     dustinAudio.pause();
                     dustinAudio.currentTime = 0;
-                    dustinAudio.removeEventListener('ended', arguments.callee);
-                    dustinAudio.removeEventListener('error', arguments.callee);
+                    try {
+                        if (dustinAudioEndedHandler) {
+                            dustinAudio.removeEventListener('ended', dustinAudioEndedHandler);
+                        }
+                        if (dustinAudioErrorHandler) {
+                            dustinAudio.removeEventListener('error', dustinAudioErrorHandler);
+                        }
+                    } catch (e) {
+                        console.warn('Erro ao remover listeners do áudio:', e);
+                    }
+
+                    // Limpar timeout fallback se existir
+                    if (dustinAudioTimeout) {
+                        clearTimeout(dustinAudioTimeout);
+                        dustinAudioTimeout = null;
+                    }
+
                     dustinAudio = null;
+                    dustinAudioEndedHandler = null;
+                    dustinAudioErrorHandler = null;
                 }
 
                 // Remover listeners dos botões para evitar vazamentos
