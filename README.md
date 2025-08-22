@@ -1,25 +1,32 @@
-# Mundo Invertido - Experiência de Realidade Aumentada  Stranger Things![Tela Inicial do Jogo](https-i.imgur.com-Zc8Ea2d.png)Uma experiência de Realidade Aumentada (WebAR) para navegadores mobile, inspirada no universo da série "Stranger Things". Aponte sua câmera para o marcador e veja uma cena do Mundo Invertido ganhar vida.---### 🎮 [Acesse a demo ao vivo aqui!](https://riverlanteixeira.github.io/mundo-invertido/)---## 📖 Sobre o ProjetoEste projeto foi criado como uma demonstração das capacidades da Realidade Aumentada na web, utilizando as bibliotecas **A-Frame** e **AR.js**. A aplicação não requer a instalação de nenhum aplicativo, funcionando diretamente no navegador do seu celular.Ao detectar o marcador Hiro, a cena revela o personagem Will Byers no ambiente sombrio do Mundo Invertido, com uma trilha sonora temática para aumentar a imersão.## 🕹️ Como Jogar1.  **Acesse o link:** Abra o [link do jogo](https://riverlanteixeira.github.io/mundo-invertido/) no navegador do seu celular (preferencialmente Chrome no Android ou Safari no iOS).
-2.  **Permita a Câmera:** Conceda a permissão para o site usar a câmera do seu dispositivo.
-3.  **Inicie a Experiência:** Toque no botão "Iniciar" na tela inicial.
-4.  **Aponte para o Marcador:** Aponte a câmera para a imagem do marcador Hiro abaixo. Você pode imprimi-la ou exibi-la na tela de outro dispositivo.## 🖼️ Marcador ARUse a imagem abaixo como o alvo para a câmera.![Marcador Hiro](https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/HIRO.jpg)## ✨ Funcionalidades- **Realidade Aumentada no Navegador:** Sem necessidade de instalar aplicativos.
-- **Cena 3D Interativa:** Modelos 3D que aparecem sobre o marcador.
-- **Áudio Imersivo:** Trilha sonora e efeitos sonoros temáticos.
-- **Interface Simples:** Tela de início e interações intuitivas.## 🛠️ Tecnologias Utilizadas- **HTML5**
-- **CSS3**
-- **JavaScript**
-- **[A-Frame](https://aframe.io/):** Framework web para construir experiências de realidade virtual e aumentada.
-- **[AR.js](https://ar-js-org.github.io/AR.js-Docs/):** Solução de realidade aumentada para a web.## 🚀 Como Executar LocalmenteSe desejar executar o projeto em sua máquina local:1.  Clone o repositório:
-    ```bash
-    git clone https://github.com/riverlanteixeira/mundo-invertido.git
-    ```
-2.  Navegue até a pasta do projeto:
-    ```bash
-    cd mundo-invertido
-    ```
-3.  Inicie um servidor web local. Uma maneira simples de fazer isso é com a extensão **Live Server** do VS Code ou usando Python:
-    ```bash
-    # Se você tiver Python 3.x
-    python -m http.server
-    ```
-4.  Abra o endereço fornecido (geralmente `http://localhost:8000`) no seu navegador.## 📄 Créditos e LicençaEste projeto utiliza modelos 3D incríveis da comunidade Sketchfab, licenciados sob Creative Commons (CC-BY-4.0).- **"Will Byers no mundo invertido"**: por riverlan.teixeira, licenciado sob CC-BY-4.0. Link para o modelo.
-- **"Stranger Things Walkie Talkie"**: por Mattyew, licenciado sob CC-BY-4.0. Link para o modelo.O código-fonte deste projeto é distribuído sob a licença MIT.
+# Mundo Invertido - Jogo de Realidade Aumentada
+
+Um jogo imersivo em Realidade Aumentada onde você interage com mundos virtuais através de marcadores físicos. Desenvolvido com tecnologias web modernas para dispositivos móveis.
+
+![Demo do Jogo](https://via.placeholder.com/800x400?text=Imagem+do+Jogo+em+Ação)  
+*Exemplo de interação com objetos 3D sobre um marcador*
+
+## 📱 Demonstração Online
+[Acesse o jogo aqui](https://riverlanteixeira.github.io/mundo-invertido/)
+
+## ✨ Funcionalidades
+- **Realidade Aumentada**: Visualize objetos 3D sobre marcadores físicos
+- **Interatividade**: Toque, arraste e explore elementos virtuais
+- **Experiência Multiplataforma**: Funciona em smartphones Android/iOS e tablets
+- **Mundos Variados**: Explore diferentes cenários usando marcadores distintos
+
+## 🛠 Tecnologias Utilizadas
+- [AR.js](https://ar-js-org.github.io/AR.js-Docs/) - Framework de RA para web
+- [Three.js](https://threejs.org/) - Biblioteca 3D para web
+- [GLTF Models](https://www.khronos.org/gltf/) - Formato de modelos 3D otimizados
+- HTML5, CSS3 e JavaScript puro
+
+## 📋 Pré-requisitos
+Para jogar localmente:
+1. Um dispositivo móvel com câmera
+2. Navegador moderno (Chrome, Firefox, Safari)
+3. Impressora para imprimir os marcadores (opcional)
+
+## 🔧 Instalação Local
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/riverlanteixeira/mundo-invertido.git
