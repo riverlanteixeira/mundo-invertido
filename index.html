@@ -1,0 +1,2408 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Stranger Things AR - Caça aos Objetos</title>
+    <meta name="description" content="Descubra os objetos que aparecem no seu mundo">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- A-Frame -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <!-- Three.js já está incluído no A-Frame, mas vamos garantir acesso global -->
+    <script>
+        // Garantir que THREE esteja disponível globalmente
+        window.THREE = window.THREE || AFRAME.THREE;
+    </script>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .ui-element {
+            pointer-events: auto;
+        }
+
+        .ui-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .ui-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #logo {
+            width: 80%;
+            max-width: 400px;
+            margin-bottom: 30px;
+        }
+
+        #progress-bar-container {
+            width: 70%;
+            max-width: 350px;
+            height: 20px;
+            border: 2px solid #e72626;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #e72626;
+            transition: width 0.4s ease-in-out;
+        }
+
+        #loading-info {
+            font-size: 1em;
+            color: #ccc;
+            height: 40px;
+            margin-top: 10px;
+            text-align: center;
+            padding: 0 15px;
+        }
+
+        #enter-button {
+            display: none;
+            /* Começa escondido */
+            margin-top: 40px;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            background-color: #e72626;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Ícone da mochila */
+        #backpack-icon {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+            border-radius: 15px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 15;
+            border: 2px solid #654321;
+        }
+
+        #backpack-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        #backpack-icon:active {
+            transform: scale(0.95);
+        }
+
+        /* Badge de contador */
+        #backpack-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #e72626;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            border: 2px solid #fff;
+        }
+
+        /* Modal da mochila */
+        #backpack-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            backdrop-filter: blur(5px);
+        }
+
+        #backpack-content {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            border: 2px solid #e72626;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            color: #fff;
+            position: relative;
+        }
+
+        #backpack-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e72626;
+        }
+
+        #backpack-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #close-backpack {
+            background: #e72626;
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        #close-backpack:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+
+        #collectibles-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #collectibles-list li {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #collectibles-list li.found {
+            background: rgba(76, 175, 80, 0.2);
+            border-left-color: #4CAF50;
+            color: #a5d6a7;
+        }
+
+        #collectibles-list li:not(.found) {
+            border-left-color: #e72626;
+        }
+
+        #collectibles-list li .item-status {
+            margin-left: auto;
+            font-size: 1.2em;
+        }
+
+        #location-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(231, 38, 38, 0.2);
+            border-radius: 10px;
+            font-size: 0.9em;
+            border: 1px solid #e72626;
+        }
+
+        #progress-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #ccc;
+        }
+
+        #progress-bar-game {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e72626 0%, #ff4444 100%);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Medidor de distância na tela principal */
+        #distance-meter {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 30px;
+            border: 2px solid #e72626;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            font-size: 1.1em;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            display: none;
+            min-width: 250px;
+            max-width: 90vw;
+            transition: all 0.3s ease;
+        }
+
+        #distance-meter.show {
+            display: block;
+        }
+
+        #distance-meter .distance-icon {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+
+        #distance-meter .distance-text {
+            font-weight: bold;
+        }
+
+        #distance-meter.unlocked {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        #distance-meter.unlocked .distance-icon {
+            color: #4CAF50;
+        }
+
+        /* Sistema de notificações toast */
+        #toast-container {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 25;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 25px;
+            margin-bottom: 10px;
+            border: 2px solid #e72626;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            max-width: 80vw;
+            text-align: center;
+            font-size: 1em;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .toast.warning {
+            border-color: #ff9800;
+            background: rgba(255, 152, 0, 0.2);
+        }
+
+        /* Animação para objetos colecionáveis */
+        @keyframes collectible-pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .collectible-ready {
+            animation: collectible-pulse 2s ease-in-out infinite;
+        }
+
+        /* Animação de destaque quando o jogador erra o clique */
+        @keyframes collectible-highlight {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+
+            25% {
+                transform: scale(1.15);
+                filter: brightness(1.5);
+            }
+
+            50% {
+                transform: scale(1.1);
+                filter: brightness(1.3);
+            }
+
+            75% {
+                transform: scale(1.15);
+                filter: brightness(1.5);
+            }
+        }
+
+        .collectible-highlight {
+            animation: collectible-highlight 0.8s ease-in-out;
+        }
+
+        #victory-screen h1 {
+            font-size: 2.5em;
+            color: #e72626;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        #victory-screen p {
+            font-size: 1.2em;
+        }
+
+        /* Esconder completamente o botão VR do A-Frame */
+        .a-enter-vr-button,
+        .a-enter-ar-button,
+        .a-vr-mode-ui {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Tela de ligação do Dustin */
+        #call-screen {
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Efeito de fundo animado */
+        #call-screen::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(231, 38, 38, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        /* Status bar da ligação */
+        #call-status-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: #fff;
+            border: 1px solid #333;
+        }
+
+        /* Container principal da ligação */
+        #call-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px 20px;
+        }
+
+        #dustin-avatar {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 6px solid #e72626;
+            margin-bottom: 30px;
+            box-shadow:
+                0 0 40px rgba(231, 38, 38, 0.6),
+                0 0 80px rgba(231, 38, 38, 0.3),
+                inset 0 0 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Efeito de ondas no avatar */
+        #dustin-avatar::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            border-radius: 50%;
+            border: 3px solid rgba(231, 38, 38, 0.5);
+            animation: ripple 2s infinite;
+        }
+
+        #dustin-avatar::after {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            right: -12px;
+            bottom: -12px;
+            border-radius: 50%;
+            border: 2px solid rgba(231, 38, 38, 0.3);
+            animation: ripple 2s infinite 0.5s;
+        }
+
+        #caller-name {
+            font-size: 2.2em;
+            font-weight: 300;
+            margin-bottom: 8px;
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            letter-spacing: 1px;
+        }
+
+        #caller-subtitle {
+            font-size: 1em;
+            color: #888;
+            margin-bottom: 15px;
+            font-weight: 300;
+        }
+
+        #call-status {
+            font-size: 1.1em;
+            color: #e72626;
+            margin-bottom: 60px;
+            text-align: center;
+            font-weight: 400;
+            animation: blink 1.5s infinite;
+        }
+
+        /* Timer da ligação */
+        #call-timer {
+            font-size: 1.2em;
+            color: #fff;
+            margin-bottom: 40px;
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            display: none;
+        }
+
+        #call-buttons {
+            display: flex;
+            gap: 80px;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .call-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .call-button:active {
+            transform: scale(0.95);
+        }
+
+        #answer-button {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            box-shadow:
+                0 4px 20px rgba(76, 175, 80, 0.4),
+                0 0 30px rgba(76, 175, 80, 0.2);
+        }
+
+        #answer-button:hover {
+            box-shadow:
+                0 6px 25px rgba(76, 175, 80, 0.5),
+                0 0 40px rgba(76, 175, 80, 0.3);
+            transform: translateY(-2px);
+        }
+
+        #decline-button {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+            box-shadow:
+                0 4px 20px rgba(244, 67, 54, 0.4),
+                0 0 30px rgba(244, 67, 54, 0.2);
+        }
+
+        #decline-button:hover {
+            box-shadow:
+                0 6px 25px rgba(244, 67, 54, 0.5),
+                0 0 40px rgba(244, 67, 54, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Animações */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.08);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1.3);
+                opacity: 0;
+            }
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes blink {
+
+            0%,
+            50% {
+                opacity: 1;
+            }
+
+            51%,
+            100% {
+                opacity: 0.6;
+            }
+        }
+
+        .calling-animation {
+            animation: pulse 1.2s infinite ease-in-out;
+        }
+
+        /* Efeito de ondas durante a ligação */
+        .call-active #dustin-avatar {
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        /* Indicadores visuais */
+        .signal-bars {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            display: flex;
+            gap: 3px;
+            align-items: flex-end;
+        }
+
+        .signal-bar {
+            width: 4px;
+            background: #4CAF50;
+            border-radius: 2px;
+            animation: signal 1.5s infinite;
+        }
+
+        .signal-bar:nth-child(1) {
+            height: 8px;
+            animation-delay: 0s;
+        }
+
+        .signal-bar:nth-child(2) {
+            height: 12px;
+            animation-delay: 0.2s;
+        }
+
+        .signal-bar:nth-child(3) {
+            height: 16px;
+            animation-delay: 0.4s;
+        }
+
+        .signal-bar:nth-child(4) {
+            height: 20px;
+            animation-delay: 0.6s;
+        }
+
+        @keyframes signal {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Sistema de Combate do Demogorgon */
+        #combat-ui {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 2px solid #e72626;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            display: none;
+            min-width: 300px;
+            text-align: center;
+            backdrop-filter: blur(15px);
+        }
+
+        #combat-ui.show {
+            display: block;
+        }
+
+        #enemy-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #e72626;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #health-bar-container {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #666;
+        }
+
+        #health-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 50%, #CDDC39 100%);
+            width: 100%;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        #health-bar.low {
+            background: linear-gradient(90deg, #f44336 0%, #ff5722 100%);
+        }
+
+        #health-bar.critical {
+            background: linear-gradient(90deg, #d32f2f 0%, #f44336 100%);
+            animation: health-critical 0.5s infinite alternate;
+        }
+
+        #health-text {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+
+        #combat-instructions {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        @keyframes health-critical {
+            0% {
+                opacity: 0.7;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Animações de combate */
+        @keyframes demogorgon-hit {
+            0% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+
+            25% {
+                transform: scale(0.9);
+                filter: brightness(2) hue-rotate(0deg);
+            }
+
+            50% {
+                transform: scale(1.1);
+                filter: brightness(1.5) hue-rotate(180deg);
+            }
+
+            75% {
+                transform: scale(0.95);
+                filter: brightness(1.8) hue-rotate(90deg);
+            }
+
+            100% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+        }
+
+        .demogorgon-hit {
+            animation: demogorgon-hit 0.6s ease-in-out;
+        }
+
+        @keyframes demogorgon-death {
+            0% {
+                transform: scale(1) rotateY(0deg);
+                opacity: 1;
+                filter: brightness(1);
+            }
+
+            25% {
+                transform: scale(1.2) rotateY(90deg);
+                opacity: 0.8;
+                filter: brightness(2) hue-rotate(180deg);
+            }
+
+            50% {
+                transform: scale(0.8) rotateY(180deg);
+                opacity: 0.6;
+                filter: brightness(0.5) hue-rotate(270deg);
+            }
+
+            75% {
+                transform: scale(0.4) rotateY(270deg);
+                opacity: 0.3;
+                filter: brightness(0.2);
+            }
+
+            100% {
+                transform: scale(0) rotateY(360deg);
+                opacity: 0;
+                filter: brightness(0);
+            }
+        }
+
+        .demogorgon-death {
+            animation: demogorgon-death 2s ease-in-out forwards;
+        }
+
+        @keyframes demogorgon-spawn {
+            0% {
+                transform: scale(0) rotateY(0deg);
+                opacity: 0;
+                filter: brightness(0);
+            }
+
+            25% {
+                transform: scale(0.4) rotateY(90deg);
+                opacity: 0.3;
+                filter: brightness(0.5) hue-rotate(180deg);
+            }
+
+            50% {
+                transform: scale(0.8) rotateY(180deg);
+                opacity: 0.6;
+                filter: brightness(1.5) hue-rotate(90deg);
+            }
+
+            75% {
+                transform: scale(1.2) rotateY(270deg);
+                opacity: 0.8;
+                filter: brightness(2);
+            }
+
+            100% {
+                transform: scale(1) rotateY(360deg);
+                opacity: 1;
+                filter: brightness(1);
+            }
+        }
+
+        .demogorgon-spawn {
+            animation: demogorgon-spawn 1.5s ease-out;
+        }
+
+        /* Efeito de mira no Demogorgon */
+        @keyframes demogorgon-targeted {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: brightness(1) drop-shadow(0 0 0 rgba(231, 38, 38, 0));
+            }
+
+            50% {
+                transform: scale(1.05);
+                filter: brightness(1.3) drop-shadow(0 0 20px rgba(231, 38, 38, 0.8));
+            }
+        }
+
+        .demogorgon-targeted {
+            animation: demogorgon-targeted 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- A-Frame Scene com Hit-Test -->
+    <a-scene id="ar-scene"
+        webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #overlay;"
+        vr-mode-ui="enabled: false;"
+        renderer="logarithmicDepthBuffer: true; colorManagement: true; antialias: true; physicallyCorrectLights: true;"
+        background="color: transparent;">
+        <a-assets>
+            <a-asset-item id="bike-model" src="assets/models/bicicleta-will.glb"></a-asset-item>
+            <a-asset-item id="compass-model" src="assets/models/compass.glb"></a-asset-item>
+            <a-asset-item id="baseball-bat-model" src="assets/models/baseball_bat.glb"></a-asset-item>
+
+            <a-asset-item id="walkie-talkie-model"
+                src="assets/models/stranger_things_walkie_talkie/scene.gltf"></a-asset-item>
+            <a-asset-item id="demogorgon-model" src="assets/models/demogorgon.glb"></a-asset-item>
+            <a-asset-item id="will-mundo-invertido-model"
+                src="assets/models/will_byers_no_mundo_invertido/scene.gltf"></a-asset-item>
+        </a-assets>
+
+        <!-- Iluminação da Cena -->
+        <a-light type="ambient" color="#FFF" intensity="0.8"></a-light>
+        <a-light type="directional" color="#FFF" intensity="1.0" position="-1 2 1"></a-light>
+        <a-light type="point" color="#FFF" intensity="0.6" position="2 2 2"></a-light>
+
+        <a-camera fov="80">
+            <a-cursor id="cursor"
+                animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 150; from: 0.1 0.1 0.1; to: 1 1 1"
+                animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+                geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03" material="color: #e72626; shader: flat"
+                raycaster="objects: .collectible, .enemy" visible="false">
+            </a-cursor>
+        </a-camera>
+
+        <!-- Retícula (Anel) - agora apenas um indicador visual -->
+        <a-entity id="reticle" visible="false" geometry="primitive: ring; radius-inner: 0.05; radius-outer: 0.1;"
+            material="color: #e72626; shader: flat;"></a-entity>
+
+        <!-- Entidades colecionáveis -->
+        <a-entity id="bike" class="collectible" gltf-model="#bike-model" collectible-object visible="false"></a-entity>
+        <a-entity id="compass" class="collectible" gltf-model="#compass-model" collectible-object
+            visible="false"></a-entity>
+        <a-entity id="baseball-bat" class="collectible" gltf-model="#baseball-bat-model" collectible-object
+            visible="false"></a-entity>
+
+        <a-entity id="walkie-talkie" class="collectible" gltf-model="#walkie-talkie-model" collectible-object
+            material="shader: standard; transparent: false;" visible="false"></a-entity>
+        <a-entity id="demogorgon" class="enemy" gltf-model="#demogorgon-model" demogorgon-combat
+            visible="false"></a-entity>
+        <a-entity id="will-mundo-invertido" class="collectible" gltf-model="#will-mundo-invertido-model"
+            collectible-object visible="false"></a-entity>
+    </a-scene>
+
+
+
+    <!-- UI Overlay -->
+    <div id="overlay">
+        <div id="loading-screen" class="ui-screen ui-element">
+            <img id="logo" src="assets/img/stranger-things-logo.png" alt="Stranger Things Logo">
+            <div id="progress-bar-container">
+                <div id="progress-bar"></div>
+            </div>
+            <p id="loading-info">Carregando assets...</p>
+
+            <button id="enter-button" class="ui-element">Entrar no Mundo Invertido</button>
+        </div>
+
+        <!-- Ícone da mochila -->
+        <div id="backpack-icon" class="ui-element">
+            🎒
+            <div id="backpack-badge">0/6</div>
+        </div>
+
+        <!-- Modal da mochila -->
+        <div id="backpack-modal" class="ui-element">
+            <div id="backpack-content">
+                <div id="backpack-header">
+                    <div id="backpack-title">
+                        🎒 Mochila de Itens
+                    </div>
+                    <button id="close-backpack">✕</button>
+                </div>
+
+                <div id="progress-info">
+                    <span id="progress-text">0 de 6 itens coletados</span>
+                </div>
+                <div id="progress-bar-game">
+                    <div id="progress-fill"></div>
+                </div>
+
+                <ul id="collectibles-list">
+                    <li data-item="walkie-talkie">
+                        📻 Walkie-Talkie
+                        <span class="item-status">❌</span>
+                    </li>
+                    <li data-item="bike">
+                        🚲 Bicicleta
+                        <span class="item-status">❌</span>
+                    </li>
+                    <li data-item="compass">
+                        🧭 Bússola
+                        <span class="item-status">❌</span>
+                    </li>
+                    <li data-item="baseball-bat">
+                        ⚾ Taco de Baseball
+                        <span class="item-status">❌</span>
+                    </li>
+
+                    <li data-item="demogorgon">
+                        👹 Demogorgon
+                        <span class="item-status">❌</span>
+                    </li>
+                    <li data-item="will-mundo-invertido">
+                        👦 Will (Mundo Invertido)
+                        <span class="item-status">❌</span>
+                    </li>
+                </ul>
+
+                <div id="location-info">
+                    <strong>📍 Localização Atual:</strong><br>
+                    <span id="location-status">Aguardando GPS...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="call-screen" class="ui-screen ui-element hidden">
+            <div id="call-status-bar">📱 Ligação recebida</div>
+
+            <div class="signal-bars">
+                <div class="signal-bar"></div>
+                <div class="signal-bar"></div>
+                <div class="signal-bar"></div>
+                <div class="signal-bar"></div>
+            </div>
+
+            <div id="call-content">
+                <img id="dustin-avatar" src="assets/img/dustin.png" alt="Dustin Henderson">
+                <div id="caller-name">Dustin Henderson</div>
+                <div id="caller-subtitle">Hawkins, Indiana</div>
+                <div id="call-status">Chamada recebida...</div>
+                <div id="call-timer">00:00</div>
+
+                <div id="call-buttons">
+                    <button id="decline-button" class="call-button ui-element">✖</button>
+                    <button id="answer-button" class="call-button ui-element calling-animation">📞</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="victory-screen" class="ui-screen ui-element hidden">
+            <h1>Você Conseguiu!</h1>
+            <p>Todos os itens foram encontrados.</p>
+        </div>
+
+        <!-- Medidor de distância na tela principal -->
+        <div id="distance-meter">
+            <span class="distance-icon">🎯</span>
+            <span class="distance-text" id="distance-text">Aguardando GPS...</span>
+        </div>
+
+        <!-- Container de notificações toast -->
+        <div id="toast-container"></div>
+
+        <!-- UI de Combate do Demogorgon -->
+        <div id="combat-ui" class="ui-element">
+            <div id="enemy-name">👹 Demogorgon</div>
+            <div id="health-text">Vida: <span id="health-value">100</span>/100</div>
+            <div id="health-bar-container">
+                <div id="health-bar"></div>
+            </div>
+            <div id="combat-instructions">Mire e clique no Demogorgon para atacar!</div>
+        </div>
+
+        <!-- Botão de debug temporário -->
+        <button id="debug-collect"
+            style="position: fixed; bottom: 20px; right: 20px; z-index: 30; padding: 10px; background: #ff0000; color: white; border: none; border-radius: 5px; display: none;">
+            Coletar Item (Debug)
+        </button>
+
+
+    </div>
+
+    <script>
+        // Componente A-Frame para objetos colecionáveis
+        AFRAME.registerComponent('collectible-object', {
+            init: function () {
+                console.log('Inicializando componente collectible-object para:', this.el.id);
+
+                // Múltiplos eventos para garantir detecção
+                const events = ['click', 'touchstart', 'mousedown'];
+
+                events.forEach(eventType => {
+                    this.el.addEventListener(eventType, (event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        console.log(`Evento ${eventType} detectado no objeto:`, this.el.id);
+
+                        // Disparar evento customizado
+                        this.el.dispatchEvent(new CustomEvent('object-clicked', {
+                            detail: { objectId: this.el.id, eventType: eventType }
+                        }));
+                    });
+                });
+
+                // Eventos do cursor A-Frame
+                this.el.addEventListener('mouseenter', () => {
+                    console.log('Mouse enter no objeto:', this.el.id);
+                    document.body.style.cursor = 'pointer';
+
+                    // Mostrar cursor A-Frame quando sobre objeto coletável
+                    const cursor = document.getElementById('cursor');
+                    if (cursor && this.isCurrentCollectible()) {
+                        cursor.setAttribute('visible', true);
+                    }
+                });
+
+                this.el.addEventListener('mouseleave', () => {
+                    console.log('Mouse leave no objeto:', this.el.id);
+                    document.body.style.cursor = 'default';
+
+                    // Esconder cursor A-Frame
+                    const cursor = document.getElementById('cursor');
+                    if (cursor) {
+                        cursor.setAttribute('visible', false);
+                    }
+                });
+
+                // Evento específico do cursor A-Frame
+                this.el.addEventListener('raycaster-intersected', () => {
+                    console.log('Raycaster intersected:', this.el.id);
+                });
+
+                this.el.addEventListener('raycaster-intersected-cleared', () => {
+                    console.log('Raycaster cleared:', this.el.id);
+                });
+            },
+
+            isCurrentCollectible: function () {
+                // Verificar se este é o objeto atual que pode ser coletado
+                return window.currentObjectPlaced &&
+                    window.currentObjectIndex < window.objectsToPlace.length &&
+                    window.objectsToPlace[window.currentObjectIndex] === this.el.id;
+            }
+        });
+
+        console.log('Script carregado, aguardando DOM...');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM carregado - primeiro listener');
+            const sceneEl = document.getElementById('ar-scene');
+            const loadingScreen = document.getElementById('loading-screen');
+            const enterButton = document.getElementById('enter-button');
+            const loadingInfo = document.getElementById('loading-info');
+            const progressBar = document.getElementById('progress-bar');
+            const victoryScreen = document.getElementById('victory-screen');
+            const reticle = document.getElementById('reticle');
+
+
+            const collectibles = {
+                'walkie-talkie': false,
+                bike: false,
+                compass: false,
+                'baseball-bat': false,
+                demogorgon: false,
+                'will-mundo-invertido': false
+            };
+            let foundCollectibles = 0;
+            const objectsToPlace = ['walkie-talkie', 'bike', 'compass', 'baseball-bat', 'demogorgon', 'will-mundo-invertido'];
+            let currentObjectIndex = 0;
+            let currentObjectPlaced = false;
+            let gameInitialized = false; // Flag para controlar a inicialização do jogo
+
+            // Tornar variáveis acessíveis globalmente para o componente A-Frame
+            window.objectsToPlace = objectsToPlace;
+            window.currentObjectIndex = currentObjectIndex;
+            window.currentObjectPlaced = currentObjectPlaced;
+            let canPlace = false; // Inicialmente false até chegar na localização
+            let hitTestSource = null;
+            let geolocationWatchId = null;
+            let currentLocation = null;
+            let locationUnlocked = [false, false, false, false, false, false, false]; // Controla se cada localização foi desbloqueada
+
+            // Coordenadas dos objetos (latitude, longitude)
+            // IMPORTANTE: A ordem deve corresponder exatamente à array objectsToPlace
+            const objectLocations = [
+                { lat: -27.630906548324287, lng: -48.67981535800366, name: 'Walkie-Talkie' },
+                { lat: -27.631845440560806, lng: -48.67968143981631, name: 'Bicicleta' },
+                { lat: -27.630047649362357, lng: -48.68165991383035, name: 'Bússola' },
+                { lat: -27.62821131037398, lng: -48.681728646775724, name: 'Taco de Baseball' },
+                { lat: -27.62644874857274, lng: -48.681447984299076, name: 'Demogorgon' },
+                { lat: -27.626148729780688, lng: -48.680796330959495, name: 'Will (Mundo Invertido)' }
+            ];
+
+            const PROXIMITY_RADIUS = 10; // 10 metros
+
+            // Sistema de áudios do Dustin para cada missão
+            const dustinAudios = {
+                'walkie-talkie': 'assets/audio/dustin-missao-1-completa.mp3',
+                'bike': 'assets/audio/dustin-missao-2-completa.mp3',
+                'compass': 'assets/audio/dustin-missao-3-completa.mp3',
+                'baseball-bat': 'assets/audio/dustin-missao-4-completa.mp3',
+                'demogorgon': 'assets/audio/dustin-missao-5-completa.mp3',
+                'will-mundo-invertido': 'assets/audio/dustin-missao-6-completa.mp3'
+            };
+
+            // Tornar disponível globalmente
+            window.dustinAudios = dustinAudios;
+
+            // Sistema de carregamento real de assets
+            let totalAssets = 0;
+            let loadedAssets = 0;
+            let assetsLoaded = false;
+            let preloadedAudios = {};
+
+            // Função removida - substituída por startAudioLoading
+
+            function updateLoadingProgress() {
+                console.log(`updateLoadingProgress: ${loadedAssets}/${totalAssets}`);
+
+                if (totalAssets === 0) {
+                    console.warn('totalAssets é 0, não é possível calcular progresso');
+                    return;
+                }
+
+                const progress = Math.round((loadedAssets / totalAssets) * 100);
+
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                    console.log(`Barra de progresso atualizada para ${progress}%`);
+                } else {
+                    console.error('progressBar não encontrada!');
+                }
+
+                if (loadingInfo) {
+                    if (loadedAssets < totalAssets) {
+                        loadingInfo.innerText = `Carregando assets... ${loadedAssets}/${totalAssets} (${progress}%)`;
+                    } else if (!assetsLoaded) {
+                        assetsLoaded = true;
+                        loadingInfo.innerText = "Todos os assets carregados! Pronto para jogar offline.";
+
+                        const progressContainer = document.getElementById('progress-bar-container');
+                        if (progressContainer) {
+                            progressContainer.style.display = 'none';
+                        }
+
+                        if (enterButton) {
+                            enterButton.style.display = 'block';
+                        }
+
+                        console.log('Todos os assets carregados com sucesso!');
+                    }
+                } else {
+                    console.error('loadingInfo não encontrada!');
+                }
+            }
+
+            // Elementos da ligação
+            const callScreen = document.getElementById('call-screen');
+            const answerButton = document.getElementById('answer-button');
+            const declineButton = document.getElementById('decline-button');
+            const callTimer = document.getElementById('call-timer');
+            const callStatus = document.getElementById('call-status');
+            let dustinAudio = null;
+            let callStartTime = null;
+            let callTimerInterval = null;
+            let vibrationInterval = null;
+            let ringtonePlaying = false;
+
+            // Definição duplicada removida
+
+            let currentMissionAudio = 'walkie-talkie'; // Controla qual áudio tocar
+
+            function showDustinCall(missionKey = 'walkie-talkie') {
+                currentMissionAudio = missionKey;
+                console.log('Mostrando ligação do Dustin para missão:', missionKey);
+
+                // Esconder a UI do jogo e mostrar a tela de ligação
+                document.getElementById('backpack-icon').style.display = 'none';
+                document.getElementById('distance-meter').classList.remove('show');
+                callScreen.classList.remove('hidden');
+
+                // Iniciar vibração de ligação recebida
+                startIncomingCallEffects();
+
+                // Remover listeners anteriores para evitar duplicação
+                answerButton.removeEventListener('click', answerCall);
+                declineButton.removeEventListener('click', declineCall);
+
+                // Configurar eventos dos botões com proteção contra duplicação
+                answerButton.addEventListener('click', answerCall, { once: true });
+                declineButton.addEventListener('click', declineCall, { once: true });
+            }
+
+            // Tornar função disponível globalmente
+            window.showDustinCall = showDustinCall;
+
+            function startIncomingCallEffects() {
+                const vibrationPattern = [500, 300, 500, 1000];
+                if (navigator.vibrate) {
+                    vibrationInterval = setInterval(() => {
+                        navigator.vibrate(vibrationPattern);
+                    }, 2000);
+                }
+                try {
+                    createRingtone();
+                } catch (error) {
+                    console.log('Web Audio não suportado');
+                }
+            }
+
+            function createRingtone() {
+                if (!window.AudioContext && !window.webkitAudioContext) return;
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                function playTone(frequency, duration, delay = 0) {
+                    setTimeout(() => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                        oscillator.type = 'sine';
+                        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + duration);
+                    }, delay);
+                }
+                function playRingtone() {
+                    if (!ringtonePlaying) return;
+                    playTone(800, 0.3, 0);
+                    playTone(600, 0.3, 400);
+                    setTimeout(playRingtone, 2000);
+                }
+                ringtonePlaying = true;
+                playRingtone();
+            }
+
+            function stopIncomingCallEffects() {
+                if (vibrationInterval) {
+                    clearInterval(vibrationInterval);
+                    vibrationInterval = null;
+                }
+                ringtonePlaying = false;
+                if (navigator.vibrate) {
+                    navigator.vibrate(0);
+                }
+            }
+
+            function answerCall() {
+                stopIncomingCallEffects();
+                if (navigator.vibrate) navigator.vibrate(100);
+
+                callStatus.innerText = "Conectando...";
+                document.getElementById('call-buttons').style.display = 'none';
+                callTimer.style.display = 'block';
+                callScreen.classList.add('call-active');
+                answerButton.classList.remove('calling-animation');
+
+                // Usar o áudio pré-carregado da missão atual
+                if (preloadedAudios[currentMissionAudio] && preloadedAudios[currentMissionAudio].readyState >= 2) {
+                    dustinAudio = preloadedAudios[currentMissionAudio];
+                    console.log('Usando áudio pré-carregado para:', currentMissionAudio);
+                } else {
+                    dustinAudio = new Audio(dustinAudios[currentMissionAudio]);
+                    dustinAudio.preload = 'auto';
+                    dustinAudio.volume = 0.8;
+                    console.log('Carregando áudio dinamicamente para:', currentMissionAudio);
+                }
+
+                callStatus.innerText = "Chamada em andamento...";
+                callStartTime = Date.now();
+                startCallTimer();
+
+                const playAudio = () => {
+                    dustinAudio.play().catch(error => {
+                        console.error('Erro ao reproduzir áudio:', error);
+                        callStatus.innerText = "Áudio indisponível - continuando...";
+                        setTimeout(endCall, 3000);
+                    });
+                };
+
+                if (dustinAudio.readyState >= 2) playAudio();
+                else dustinAudio.addEventListener('canplaythrough', playAudio, { once: true });
+
+                dustinAudio.addEventListener('ended', () => {
+                    callStatus.innerText = "Chamada finalizada";
+                    setTimeout(endCall, 1500);
+                });
+                dustinAudio.addEventListener('error', () => {
+                    callStatus.innerText = "Erro no áudio, finalizando...";
+                    setTimeout(endCall, 2000);
+                });
+            }
+
+            function startCallTimer() {
+                callTimerInterval = setInterval(() => {
+                    if (!callStartTime) return;
+                    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                    const seconds = (elapsed % 60).toString().padStart(2, '0');
+                    callTimer.innerText = `${minutes}:${seconds}`;
+                }, 1000);
+            }
+
+            function stopCallTimer() {
+                if (callTimerInterval) {
+                    clearInterval(callTimerInterval);
+                    callTimerInterval = null;
+                }
+                callStartTime = null;
+            }
+
+            function declineCall() {
+                stopIncomingCallEffects();
+                if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
+                callStatus.innerText = "Chamada recusada";
+
+                setTimeout(() => {
+                    endCall(true); // Passa um flag para indicar que foi recusada
+                }, 1500);
+            }
+
+            function endCall(wasDeclined = false) {
+                console.log('endCall() chamada');
+                stopIncomingCallEffects();
+                stopCallTimer();
+
+                // Limpeza adequada do áudio
+                if (dustinAudio) {
+                    dustinAudio.pause();
+                    dustinAudio.currentTime = 0;
+                    dustinAudio.removeEventListener('ended', arguments.callee);
+                    dustinAudio.removeEventListener('error', arguments.callee);
+                    dustinAudio = null;
+                }
+
+                // Remover listeners dos botões para evitar vazamentos
+                answerButton.removeEventListener('click', answerCall);
+                declineButton.removeEventListener('click', declineCall);
+
+                callScreen.classList.remove('call-active');
+                callScreen.classList.add('hidden');
+
+                // Resetar UI da ligação para a próxima vez
+                callTimer.style.display = 'none';
+                document.getElementById('call-buttons').style.display = 'flex';
+                answerButton.classList.add('calling-animation');
+                callStatus.innerText = "Chamada recebida...";
+
+                // Mostrar UI do jogo novamente
+                document.getElementById('backpack-icon').style.display = 'flex';
+                document.getElementById('distance-meter').classList.add('show');
+
+                // Continuar para o próximo objeto ou mostrar vitória
+                if (currentMissionAudio === 'will-mundo-invertido') {
+                    setTimeout(showVictoryScreen, 2000);
+                } else {
+                    prepareForNextObject();
+                }
+            }
+
+            // Função de carregamento simples como fallback
+            function startSimpleLoading() {
+                console.log('Iniciando carregamento simples...');
+                loadingInfo.innerText = "Carregando jogo...";
+
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    progressBar.style.width = progress + '%';
+                    loadingInfo.innerText = `Carregando... ${progress}%`;
+
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        assetsLoaded = true;
+                        loadingInfo.innerText = "Pronto para jogar!";
+                        document.getElementById('progress-bar-container').style.display = 'none';
+                        enterButton.style.display = 'block';
+                        console.log('Carregamento simples concluído');
+                    }
+                }, 300);
+            }
+
+            // Sistema de carregamento movido para o primeiro DOMContentLoaded
+
+            // Função removida - substituída por startAudioLoadingLocal
+
+            // Função de carregamento de áudios real (dentro do escopo do DOMContentLoaded)
+            function startAudioLoadingLocal() {
+                console.log('startAudioLoadingLocal() chamada');
+                console.log('dustinAudios:', dustinAudios);
+
+                if (!loadingInfo || !progressBar) {
+                    console.error('Elementos de UI não encontrados');
+                    startSimpleLoading();
+                    return;
+                }
+
+                console.log('Elementos encontrados, iniciando carregamento real...');
+                loadingInfo.innerText = "Carregando áudios...";
+
+                const audioKeys = Object.keys(dustinAudios);
+                totalAssets = audioKeys.length;
+                loadedAssets = 0;
+
+                console.log(`Carregando ${totalAssets} áudios`);
+                updateLoadingProgress();
+
+                // Carregar cada áudio de forma real
+                audioKeys.forEach((key) => {
+                    const audioSrc = dustinAudios[key];
+                    console.log(`Carregando áudio ${key}: ${audioSrc}`);
+
+                    const audio = new Audio(audioSrc);
+                    audio.preload = 'auto';
+                    audio.volume = 0.8;
+
+                    // Eventos reais de carregamento
+                    const onLoad = () => {
+                        loadedAssets++;
+                        updateLoadingProgress();
+                        preloadedAudios[key] = audio;
+                        console.log(`Áudio ${key} carregado com sucesso (${loadedAssets}/${totalAssets})`);
+                        cleanup();
+                    };
+
+                    const onError = (error) => {
+                        console.warn(`Erro ao carregar áudio ${key}:`, error);
+                        loadedAssets++; // Contar como carregado para não travar
+                        updateLoadingProgress();
+                        cleanup();
+                    };
+
+                    const cleanup = () => {
+                        audio.removeEventListener('canplaythrough', onLoad);
+                        audio.removeEventListener('error', onError);
+                        audio.removeEventListener('loadeddata', onLoad);
+                    };
+
+                    // Múltiplos eventos para garantir compatibilidade
+                    audio.addEventListener('canplaythrough', onLoad, { once: true });
+                    audio.addEventListener('loadeddata', onLoad, { once: true });
+                    audio.addEventListener('error', onError, { once: true });
+
+                    // Timeout de segurança
+                    setTimeout(() => {
+                        if (!preloadedAudios[key]) {
+                            console.warn(`Timeout no carregamento de ${key}`);
+                            onError(new Error('Timeout'));
+                        }
+                    }, 10000); // 10 segundos timeout
+                });
+            }
+
+            // Iniciar carregamento após DOM estar pronto
+            console.log('Iniciando sistema de carregamento...');
+            console.log('Elementos disponíveis:');
+            console.log('loadingInfo:', loadingInfo);
+            console.log('progressBar:', progressBar);
+            console.log('dustinAudios:', typeof dustinAudios !== 'undefined' ? dustinAudios : 'undefined');
+
+            setTimeout(() => {
+                console.log('Executando carregamento de áudios...');
+                startAudioLoadingLocal();
+            }, 1000);
+
+            enterButton.addEventListener('click', async () => {
+                console.log('Botão de entrada clicado. Tentando iniciar AR...');
+
+                // Verificações de segurança
+                if (enterButton.disabled) {
+                    console.log('Botão já está desabilitado, ignorando clique...');
+                    return;
+                }
+
+                loadingInfo.innerText = "Iniciando AR...";
+                enterButton.disabled = true;
+                enterButton.style.opacity = '0.6';
+
+                // Adicionar um timeout para o caso de a inicialização travar
+                const arStartTimeout = setTimeout(() => {
+                    if (!gameInitialized) {
+                        console.error('Timeout na inicialização do AR');
+                        loadingInfo.innerText = "Falha ao iniciar AR. Verifique as permissões e recarregue a página.";
+                        enterButton.innerText = "Tentar Novamente";
+                        enterButton.disabled = false;
+                        enterButton.style.opacity = '1';
+                    }
+                }, 10000); // 10 segundos de timeout
+
+                try {
+                    // Verificações de compatibilidade
+                    if (!navigator.xr) {
+                        throw new Error('WebXR não é suportado neste navegador. Use Chrome ou Edge em Android.');
+                    }
+
+                    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                        throw new Error('WebXR requer uma conexão segura (HTTPS).');
+                    }
+
+                    // Verificar se AR é suportado
+                    const isARSupported = await navigator.xr.isSessionSupported('immersive-ar');
+                    if (!isARSupported) {
+                        throw new Error('AR não é suportado neste dispositivo.');
+                    }
+
+                    console.log('Iniciando sessão AR...');
+                    await sceneEl.enterAR();
+
+                    // Limpar timeout se chegou até aqui
+                    clearTimeout(arStartTimeout);
+
+                } catch (e) {
+                    clearTimeout(arStartTimeout);
+                    console.error('Erro ao iniciar AR:', e);
+
+                    let errorMessage = e.message;
+                    if (e.message.includes('NotAllowedError')) {
+                        errorMessage = 'Permissão de câmera negada. Permita o acesso à câmera e tente novamente.';
+                    } else if (e.message.includes('NotFoundError')) {
+                        errorMessage = 'Câmera não encontrada. Verifique se seu dispositivo tem câmera.';
+                    }
+
+                    loadingInfo.innerText = `Erro: ${errorMessage}`;
+                    enterButton.innerText = "Tentar Novamente";
+                    enterButton.disabled = false;
+                    enterButton.style.opacity = '1';
+                }
+            });
+
+            sceneEl.addEventListener('enter-vr', () => {
+                console.log('Evento enter-vr disparado (iniciando AR)');
+                // A-Frame entrou no modo AR com sucesso
+                if (!gameInitialized) {
+                    initGame();
+                }
+            });
+
+            sceneEl.addEventListener('exit-vr', () => {
+                console.log('Saindo do modo AR.');
+                // Opcional: resetar estado do jogo ou mostrar tela inicial
+                gameInitialized = false;
+                loadingScreen.classList.remove('hidden');
+                loadingInfo.innerText = "Você saiu do Mundo Invertido.";
+                enterButton.innerText = "Entrar Novamente";
+                enterButton.disabled = false;
+            });
+
+            function initGame() {
+                console.log('Inicializando jogo...');
+                gameInitialized = true;
+
+                loadingScreen.classList.add('hidden');
+                document.getElementById('backpack-icon').style.display = 'flex';
+
+                setupBackpackModal();
+                setupDebugButton();
+                document.getElementById('distance-meter').classList.add('show');
+                // Toast de boas-vindas removido
+                setupTouchInteraction();
+                setupGeolocation();
+
+                const renderer = sceneEl.renderer;
+                const xrSession = renderer.xr.getSession();
+                if (xrSession) {
+                    setupHitTest(xrSession, renderer);
+                } else {
+                    console.error("Sessão XR não encontrada na inicialização do jogo.");
+                    showToast("Erro crítico: Sessão AR perdida.", 'warning');
+                }
+            }
+
+            function setupDebugButton() {
+                const debugButton = document.getElementById('debug-collect');
+
+                debugButton.addEventListener('click', () => {
+                    if (currentObjectPlaced && currentObjectIndex < objectsToPlace.length) {
+                        const currentObjectId = objectsToPlace[currentObjectIndex];
+
+                        // Tratamento especial para o Demogorgon
+                        if (currentObjectId === 'demogorgon') {
+                            const demogorgonEntity = document.getElementById('demogorgon');
+                            const demogorgonComponent = demogorgonEntity.components['demogorgon-combat'];
+                            if (demogorgonComponent && demogorgonComponent.data.isActive) {
+                                // Simular ataque ao Demogorgon
+                                demogorgonComponent.takeDamage(100); // Dano suficiente para derrotar
+                                showToast('Debug: Demogorgon derrotado!', 'success');
+                            } else {
+                                showToast('Debug: Demogorgon não está ativo para combate', 'warning');
+                            }
+                        } else {
+                            // Coletar item normalmente
+                            collectItem(currentObjectId);
+                        }
+                    }
+                });
+
+                setInterval(() => {
+                    debugButton.style.display = (currentObjectPlaced && currentObjectIndex < objectsToPlace.length) ? 'block' : 'none';
+                }, 1000);
+            }
+
+            function setupBackpackModal() {
+                const backpackIcon = document.getElementById('backpack-icon');
+                const backpackModal = document.getElementById('backpack-modal');
+                const closeBackpack = document.getElementById('close-backpack');
+
+                backpackIcon.addEventListener('click', () => {
+                    backpackModal.style.display = 'flex';
+                    updateBackpackContent();
+                });
+                closeBackpack.addEventListener('click', () => {
+                    backpackModal.style.display = 'none';
+                });
+                backpackModal.addEventListener('click', (e) => {
+                    if (e.target === backpackModal) {
+                        backpackModal.style.display = 'none';
+                    }
+                });
+            }
+
+            function updateBackpackContent() {
+                const progressText = document.getElementById('progress-text');
+                const progressFill = document.getElementById('progress-fill');
+                const backpackBadge = document.getElementById('backpack-badge');
+                const totalItems = Object.keys(collectibles).length;
+                progressText.innerText = `${foundCollectibles} de ${totalItems} itens coletados`;
+                backpackBadge.innerText = `${foundCollectibles}/${totalItems}`;
+                const progressPercent = (foundCollectibles / totalItems) * 100;
+                progressFill.style.width = `${progressPercent}%`;
+            }
+
+            function showToast(message, type = 'info', duration = 3000) {
+                const toastContainer = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerText = message;
+                toastContainer.appendChild(toast);
+                setTimeout(() => toast.classList.add('show'), 100);
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+
+            function getObjectName(objectId) {
+                const names = {
+                    'bike': 'Bicicleta', 'compass': 'Bússola', 'baseball-bat': 'Taco de Baseball',
+                    'walkie-talkie': 'Walkie-Talkie', 'demogorgon': 'Demogorgon',
+                    'will-mundo-invertido': 'Will (Mundo Invertido)'
+                };
+                return names[objectId] || 'objeto';
+            }
+
+            function highlightObject(objectEntity) {
+                if (!objectEntity) return;
+                objectEntity.classList.add('collectible-highlight');
+                setTimeout(() => objectEntity.classList.remove('collectible-highlight'), 1000);
+            }
+
+            function setupGeolocation() {
+                if (!navigator.geolocation) {
+                    showToast("Geolocalização não suportada.", 'warning');
+                    return;
+                }
+                const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 1000 };
+                navigator.geolocation.getCurrentPosition(pos => {
+                    currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    checkProximityToLocations();
+                }, err => console.error(err), options);
+                geolocationWatchId = navigator.geolocation.watchPosition(pos => {
+                    currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    checkProximityToLocations();
+                }, err => console.error(err), options);
+            }
+
+            function calculateDistance(lat1, lng1, lat2, lng2) {
+                const R = 6371000; // Raio da Terra em metros
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLng = (lng2 - lng1) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c; // Distância em metros
+            }
+
+            function vibrateDevice(pattern) {
+                if (navigator.vibrate) navigator.vibrate(pattern);
+            }
+
+            function checkProximityToLocations() {
+                if (!currentLocation || currentObjectIndex >= objectsToPlace.length) return;
+
+                const currentObjectLocation = objectLocations[currentObjectIndex];
+                const distance = calculateDistance(currentLocation.lat, currentLocation.lng, currentObjectLocation.lat, currentObjectLocation.lng);
+                console.log(`Distância para ${currentObjectLocation.name}: ${distance.toFixed(1)}m`);
+
+                const distanceMeter = document.getElementById('distance-meter');
+                const distanceText = document.getElementById('distance-text');
+                const locationStatus = document.getElementById('location-status');
+                const formattedDistance = distance > 1000 ? `${(distance / 1000).toFixed(1)}km` : `${Math.round(distance)}m`;
+
+                if (locationUnlocked[currentObjectIndex]) {
+                    distanceMeter.classList.add('unlocked');
+                    distanceText.innerHTML = `✅ ${currentObjectLocation.name} desbloqueado!`;
+                    if (locationStatus) locationStatus.innerHTML = `✅ ${currentObjectLocation.name} desbloqueado!`;
+                } else if (distance <= PROXIMITY_RADIUS) {
+                    locationUnlocked[currentObjectIndex] = true;
+                    canPlace = true;
+                    vibrateDevice([300, 200, 300]);
+                    distanceMeter.classList.add('unlocked');
+                    distanceText.innerHTML = `✅ ${currentObjectLocation.name} desbloqueado!`;
+                    // Toast de proximidade removido
+                    if (locationStatus) locationStatus.innerHTML = `✅ ${currentObjectLocation.name} desbloqueado!`;
+                } else {
+                    distanceMeter.classList.remove('unlocked');
+                    distanceText.innerHTML = `${currentObjectLocation.name}: ${formattedDistance}`;
+                    if (locationStatus) locationStatus.innerHTML = `🎯 ${currentObjectLocation.name}: ${formattedDistance}`;
+                }
+            }
+
+            function setupTouchInteraction() {
+                sceneEl.addEventListener('click', handleTouch);
+                setupObjectClickListeners();
+            }
+
+            function setupObjectClickListeners() {
+                objectsToPlace.forEach(objectId => {
+                    const objectElement = document.getElementById(objectId);
+                    if (objectElement) {
+                        objectElement.addEventListener('object-clicked', (event) => {
+                            handleObjectClick(event.detail.objectId);
+                        });
+                    }
+                });
+            }
+
+            function handleObjectClick(objectId) {
+                if (currentObjectPlaced && objectsToPlace[currentObjectIndex] === objectId) {
+                    const objectElement = document.getElementById(objectId);
+                    if (objectElement && objectElement.getAttribute('visible') === true) {
+                        // Toast de coleta removido
+                        collectItem(objectId);
+                    }
+                } else {
+                    if (currentObjectIndex < objectsToPlace.length) {
+                        const expectedName = getObjectName(objectsToPlace[currentObjectIndex]);
+                        // Toast de instrução removido
+                    }
+                }
+            }
+
+            function handleTouch(event) {
+                if (!currentObjectPlaced || currentObjectIndex >= objectsToPlace.length) return;
+                if (event.target.closest('.ui-element')) return;
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                const currentObjectId = objectsToPlace[currentObjectIndex];
+                const currentObject = document.getElementById(currentObjectId);
+                if (currentObject && currentObject.getAttribute('visible') === true) {
+                    let objectName = getObjectName(currentObjectId);
+                    // Toast de instrução removido
+                    highlightObject(currentObject);
+                }
+            }
+
+            async function setupHitTest(session, renderer) {
+                try {
+                    const referenceSpace = await session.requestReferenceSpace('viewer');
+                    hitTestSource = await session.requestHitTestSource({ space: referenceSpace });
+                    renderer.setAnimationLoop(onXRFrame);
+                } catch (error) {
+                    console.error('Erro ao configurar hit-test:', error);
+                    showToast("Erro ao detectar superfície.", 'warning');
+                }
+            }
+
+            function onXRFrame(timestamp, frame) {
+                if (!frame || !hitTestSource) return;
+                const hitTestResults = frame.getHitTestResults(hitTestSource);
+                if (hitTestResults.length > 0) {
+                    const hit = hitTestResults[0];
+                    const pose = hit.getPose(sceneEl.renderer.xr.getReferenceSpace());
+                    if (pose) {
+                        reticle.setAttribute('visible', true);
+                        reticle.object3D.matrix.fromArray(pose.transform.matrix);
+                        reticle.object3D.matrix.decompose(reticle.object3D.position, reticle.object3D.quaternion, reticle.object3D.scale);
+                        if (canPlace && !currentObjectPlaced && locationUnlocked[currentObjectIndex]) {
+                            placeObject(pose);
+                        }
+                    }
+                } else {
+                    reticle.setAttribute('visible', false);
+                }
+
+                // CORREÇÃO CRÍTICA: Renderização manual necessária quando usando setAnimationLoop customizado
+                // A-Frame não renderiza automaticamente neste caso
+                if (sceneEl.renderer && sceneEl.object3D && sceneEl.camera) {
+                    sceneEl.renderer.render(sceneEl.object3D, sceneEl.camera);
+                }
+            }
+
+            function placeObject(pose) {
+                const objectId = objectsToPlace[currentObjectIndex];
+                const objectEntity = document.getElementById(objectId);
+
+                objectEntity.object3D.matrix.fromArray(pose.transform.matrix);
+                objectEntity.object3D.matrix.decompose(objectEntity.object3D.position, objectEntity.object3D.quaternion, objectEntity.object3D.scale);
+
+                const scales = {
+                    'bike': 0.4, 'demogorgon': 0.8, 'baseball-bat': 1.5,
+                    'compass': 10, 'walkie-talkie': 0.6,
+                    'will-mundo-invertido': 1
+                };
+                const scale = scales[objectId] || 0.5;
+                objectEntity.object3D.scale.set(scale, scale, scale);
+
+                objectEntity.setAttribute('visible', true);
+                currentObjectPlaced = true;
+                window.currentObjectPlaced = true;
+                console.log('Objeto colocado:', objectId);
+
+                // Tratamento especial para o Demogorgon
+                if (objectId === 'demogorgon') {
+                    // Iniciar combate manualmente
+                    const objectName = getObjectName(objectId);
+                    showToast(`${objectName} apareceu! Prepare-se para a batalha!`, 'warning');
+
+                    // Iniciar combate após um pequeno delay
+                    setTimeout(() => {
+                        const demogorgonComponent = objectEntity.components['demogorgon-combat'];
+                        if (demogorgonComponent) {
+                            demogorgonComponent.startCombat();
+                        } else {
+                            console.error('Componente demogorgon-combat não encontrado');
+                        }
+                    }, 500);
+                } else {
+                    objectEntity.classList.add('collectible-ready');
+                    const objectName = getObjectName(objectId);
+                    showToast(`${objectName} encontrado! Toque para coletar.`, 'success');
+                }
+                canPlace = false;
+            }
+
+            function prepareForNextObject() {
+                currentObjectIndex++;
+                currentObjectPlaced = false;
+
+                // Sincronizar variáveis globais corretamente
+                window.currentObjectIndex = currentObjectIndex;
+                window.currentObjectPlaced = currentObjectPlaced;
+                window.objectsToPlace = objectsToPlace;
+
+                if (currentObjectIndex < objectsToPlace.length) {
+                    const nextObjectId = objectsToPlace[currentObjectIndex];
+                    const nextObjectName = getObjectName(nextObjectId);
+                    showToast(`Ótimo! Agora vá até a localização de ${nextObjectName}`, 'info', 4000);
+                    canPlace = false;
+                    setTimeout(checkProximityToLocations, 1500);
+                } else {
+                    showVictoryScreen();
+                }
+            }
+
+            function collectItem(id) {
+                if (collectibles[id]) {
+                    console.log(`Item ${id} já foi coletado, ignorando...`);
+                    return;
+                }
+
+                console.log(`Coletando item: ${id}`);
+                collectibles[id] = true;
+                foundCollectibles++;
+                vibrateDevice([100, 50, 100]);
+
+                const entity = document.getElementById(id);
+                if (entity) {
+                    entity.setAttribute('visible', 'false');
+                    entity.classList.remove('collectible-ready');
+
+                    // Limpeza de componentes específicos
+                    if (id === 'demogorgon') {
+                        const demogorgonComponent = entity.components['demogorgon-combat'];
+                        if (demogorgonComponent && demogorgonComponent.remove) {
+                            demogorgonComponent.remove();
+                        }
+                    }
+                }
+
+                const listItem = document.querySelector(`#collectibles-list li[data-item="${id}"]`);
+                if (listItem) {
+                    listItem.classList.add('found');
+                    const statusIcon = listItem.querySelector('.item-status');
+                    if (statusIcon) statusIcon.innerText = '✅';
+                }
+
+                updateBackpackContent();
+
+                // Tornar função disponível globalmente para componentes
+                window.collectItem = collectItem;
+
+                // Sistema de ligações progressivas do Dustin
+                console.log('collectItem chamada para:', id);
+                console.log('dustinAudios disponível:', typeof dustinAudios !== 'undefined');
+                console.log('dustinAudios[id]:', dustinAudios ? dustinAudios[id] : 'dustinAudios não definido');
+
+                if (dustinAudios && dustinAudios[id]) {
+                    console.log('Iniciando ligação do Dustin para item:', id);
+                    // Delay de 3 segundos para dar tempo do jogador ver o item sendo coletado
+                    setTimeout(() => {
+                        console.log('Executando showDustinCall para:', id);
+                        showDustinCall(id);
+                    }, 3000);
+                } else {
+                    console.log('Nenhum áudio encontrado para:', id, '- preparando próximo objeto');
+                    setTimeout(prepareForNextObject, 1500);
+                }
+            }
+
+            function showVictoryScreen() {
+                console.log('Mostrando tela de vitória - limpando recursos...');
+
+                // Limpeza de recursos de geolocalização
+                if (geolocationWatchId) {
+                    navigator.geolocation.clearWatch(geolocationWatchId);
+                    geolocationWatchId = null;
+                }
+
+                // Limpeza de timers e intervals ativos
+                if (callTimerInterval) {
+                    clearInterval(callTimerInterval);
+                    callTimerInterval = null;
+                }
+
+                if (vibrationInterval) {
+                    clearInterval(vibrationInterval);
+                    vibrationInterval = null;
+                }
+
+                // Parar vibração
+                if (navigator.vibrate) {
+                    navigator.vibrate(0);
+                }
+
+                // Limpeza de áudio
+                if (dustinAudio) {
+                    dustinAudio.pause();
+                    dustinAudio = null;
+                }
+
+                // Esconder elementos da UI
+                document.getElementById('backpack-icon').style.display = 'none';
+                document.getElementById('backpack-modal').style.display = 'none';
+                document.getElementById('distance-meter').classList.remove('show');
+                document.getElementById('combat-ui').classList.remove('show');
+
+                // Mostrar tela de vitória
+                victoryScreen.classList.remove('hidden');
+
+                // Vibração de vitória
+                vibrateDevice([200, 100, 200, 100, 200, 100, 500]);
+            }
+        });
+
+        // Componente A-Frame para combate do Demogorgon
+        AFRAME.registerComponent('demogorgon-combat', {
+            schema: {
+                maxHealth: { type: 'number', default: 100 },
+                damage: { type: 'number', default: 20 },
+                isActive: { type: 'boolean', default: false }
+            },
+
+            init: function () {
+                console.log('Inicializando sistema de combate do Demogorgon');
+
+                this.health = this.data.maxHealth;
+                this.isDead = false;
+                this.isTargeted = false;
+                this.combatStarted = false;
+
+                // Elementos da UI
+                this.combatUI = document.getElementById('combat-ui');
+                this.healthBar = document.getElementById('health-bar');
+                this.healthValue = document.getElementById('health-value');
+
+                // Bind dos métodos para evitar problemas de contexto
+                this.boundOnAttack = this.onAttack.bind(this);
+                this.boundOnTargetEnter = this.onTargetEnter.bind(this);
+                this.boundOnTargetLeave = this.onTargetLeave.bind(this);
+
+                // Eventos de combate
+                this.el.addEventListener('click', this.boundOnAttack);
+                this.el.addEventListener('touchstart', this.boundOnAttack);
+                this.el.addEventListener('mousedown', this.boundOnAttack);
+
+                // Eventos de mira
+                this.el.addEventListener('mouseenter', this.boundOnTargetEnter);
+                this.el.addEventListener('mouseleave', this.boundOnTargetLeave);
+                this.el.addEventListener('raycaster-intersected', this.boundOnTargetEnter);
+                this.el.addEventListener('raycaster-intersected-cleared', this.boundOnTargetLeave);
+
+                // Verificação periódica para iniciar combate quando visível
+                this.visibilityCheck = setInterval(() => {
+                    if (!this.combatStarted && this.el.getAttribute('visible') === true) {
+                        console.log('Demogorgon detectado como visível, iniciando combate...');
+                        this.startCombat();
+                        this.clearVisibilityCheck();
+                    }
+                }, 500);
+
+                // Limpar interval após 30 segundos para evitar vazamentos
+                this.cleanupTimeout = setTimeout(() => {
+                    this.clearVisibilityCheck();
+                }, 30000);
+            },
+
+            // Método para limpeza adequada do interval
+            clearVisibilityCheck: function () {
+                if (this.visibilityCheck) {
+                    clearInterval(this.visibilityCheck);
+                    this.visibilityCheck = null;
+                }
+            },
+
+            // Método de limpeza geral
+            remove: function () {
+                this.clearVisibilityCheck();
+
+                if (this.cleanupTimeout) {
+                    clearTimeout(this.cleanupTimeout);
+                    this.cleanupTimeout = null;
+                }
+
+                // Remover event listeners
+                if (this.boundOnAttack) {
+                    this.el.removeEventListener('click', this.boundOnAttack);
+                    this.el.removeEventListener('touchstart', this.boundOnAttack);
+                    this.el.removeEventListener('mousedown', this.boundOnAttack);
+                }
+
+                if (this.boundOnTargetEnter && this.boundOnTargetLeave) {
+                    this.el.removeEventListener('mouseenter', this.boundOnTargetEnter);
+                    this.el.removeEventListener('mouseleave', this.boundOnTargetLeave);
+                    this.el.removeEventListener('raycaster-intersected', this.boundOnTargetEnter);
+                    this.el.removeEventListener('raycaster-intersected-cleared', this.boundOnTargetLeave);
+                }
+
+                // Esconder UI de combate
+                if (this.combatUI) {
+                    this.combatUI.classList.remove('show');
+                }
+            },
+
+            startCombat: function () {
+                if (this.combatStarted) {
+                    console.log('Combate já foi iniciado, ignorando...');
+                    return;
+                }
+
+                console.log('Iniciando combate com o Demogorgon!');
+                this.combatStarted = true;
+                this.data.isActive = true;
+                this.health = this.data.maxHealth;
+                this.isDead = false;
+
+                // Mostrar UI de combate
+                this.combatUI.classList.add('show');
+                this.updateHealthUI();
+
+                // Animação de spawn
+                this.el.classList.add('demogorgon-spawn');
+
+                // Remover animação após completar
+                setTimeout(() => {
+                    this.el.classList.remove('demogorgon-spawn');
+                }, 1500);
+
+                // Toast de início de combate
+                this.showCombatToast('👹 Demogorgon apareceu! Prepare-se para a batalha!', 'warning');
+
+                // Vibração de alerta
+                this.vibrateDevice([200, 100, 200, 100, 200]);
+            },
+
+            onAttack: function (event) {
+                if (!this.data.isActive || this.isDead) return;
+
+                event.stopPropagation();
+                event.preventDefault();
+
+                console.log('Atacando o Demogorgon!');
+
+                // Aplicar dano
+                this.takeDamage(this.data.damage);
+
+                // Animação de hit
+                this.el.classList.add('demogorgon-hit');
+                setTimeout(() => {
+                    this.el.classList.remove('demogorgon-hit');
+                }, 600);
+
+                // Vibração de ataque
+                this.vibrateDevice([50, 30, 50]);
+
+                // Som de ataque (se disponível)
+                this.playAttackSound();
+            },
+
+            takeDamage: function (damage) {
+                this.health = Math.max(0, this.health - damage);
+                console.log(`Demogorgon recebeu ${damage} de dano. Vida restante: ${this.health}`);
+
+                this.updateHealthUI();
+
+                if (this.health <= 0) {
+                    this.die();
+                } else {
+                    // Toast de dano
+                    this.showCombatToast(`-${damage} HP`, 'success');
+                }
+            },
+
+            die: function () {
+                console.log('Demogorgon foi derrotado!');
+
+                this.isDead = true;
+                this.data.isActive = false;
+
+                // Animação de morte
+                this.el.classList.add('demogorgon-death');
+
+                // Esconder UI de combate
+                setTimeout(() => {
+                    this.combatUI.classList.remove('show');
+                }, 500);
+
+                // Toast de vitória
+                this.showCombatToast('🎉 Demogorgon derrotado! Você salvou Hawkins!', 'success');
+
+                // Vibração de vitória
+                this.vibrateDevice([100, 50, 100, 50, 100, 50, 200]);
+
+                // Marcar como coletado após animação
+                setTimeout(() => {
+                    this.collectDemogorgon();
+                }, 2000);
+            },
+
+            collectDemogorgon: function () {
+                console.log('collectDemogorgon chamada - iniciando coleta do Demogorgon');
+
+                // Marcar como coletado no sistema principal
+                if (window.collectItem) {
+                    console.log('Chamando window.collectItem para demogorgon');
+                    window.collectItem('demogorgon');
+                } else {
+                    console.log('window.collectItem não encontrada, usando fallback');
+                    // Fallback manual
+                    const collectibles = window.collectibles || {};
+                    collectibles['demogorgon'] = true;
+
+                    const listItem = document.querySelector(`#collectibles-list li[data-item="demogorgon"]`);
+                    if (listItem) {
+                        listItem.classList.add('found');
+                        const statusIcon = listItem.querySelector('.item-status');
+                        if (statusIcon) statusIcon.innerText = '✅';
+                    }
+
+                    // Atualizar contador
+                    const foundCount = Object.values(collectibles).filter(Boolean).length;
+                    const badge = document.getElementById('backpack-badge');
+                    if (badge) badge.textContent = `${foundCount}/6`;
+
+                    // Chamar ligação do Dustin manualmente no fallback
+                    if (window.dustinAudios && window.dustinAudios['demogorgon']) {
+                        console.log('Iniciando ligação do Dustin para demogorgon (fallback)');
+                        setTimeout(() => {
+                            if (window.showDustinCall) {
+                                window.showDustinCall('demogorgon');
+                            }
+                        }, 3000);
+                    }
+                }
+
+                // Esconder o Demogorgon
+                this.el.setAttribute('visible', false);
+            },
+
+            onTargetEnter: function () {
+                if (!this.data.isActive || this.isDead) return;
+
+                console.log('Mirando no Demogorgon');
+                this.isTargeted = true;
+                this.el.classList.add('demogorgon-targeted');
+
+                // Mostrar cursor de mira
+                const cursor = document.getElementById('cursor');
+                if (cursor) {
+                    cursor.setAttribute('visible', true);
+                    cursor.setAttribute('material', 'color: #ff0000');
+                }
+
+                document.body.style.cursor = 'crosshair';
+            },
+
+            onTargetLeave: function () {
+                if (!this.data.isActive || this.isDead) return;
+
+                console.log('Saindo da mira do Demogorgon');
+                this.isTargeted = false;
+                this.el.classList.remove('demogorgon-targeted');
+
+                // Esconder cursor
+                const cursor = document.getElementById('cursor');
+                if (cursor) {
+                    cursor.setAttribute('visible', false);
+                    cursor.setAttribute('material', 'color: #e72626');
+                }
+
+                document.body.style.cursor = 'default';
+            },
+
+            updateHealthUI: function () {
+                const healthPercent = (this.health / this.data.maxHealth) * 100;
+
+                this.healthBar.style.width = `${healthPercent}%`;
+                this.healthValue.textContent = this.health;
+
+                // Mudar cor da barra baseado na vida
+                this.healthBar.classList.remove('low', 'critical');
+                if (healthPercent <= 20) {
+                    this.healthBar.classList.add('critical');
+                } else if (healthPercent <= 50) {
+                    this.healthBar.classList.add('low');
+                }
+            },
+
+            showCombatToast: function (message, type = 'info') {
+                const toastContainer = document.getElementById('toast-container');
+                if (!toastContainer) return;
+
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+
+                toastContainer.appendChild(toast);
+
+                // Mostrar toast
+                setTimeout(() => toast.classList.add('show'), 100);
+
+                // Remover toast
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toastContainer.removeChild(toast), 300);
+                }, 3000);
+            },
+
+            vibrateDevice: function (pattern) {
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(pattern);
+                }
+            },
+
+            playAttackSound: function () {
+                // Placeholder para som de ataque
+                // Você pode adicionar um arquivo de áudio aqui
+                console.log('🔊 Som de ataque!');
+            }
+        });
+    </script>
+</body>
+
+</html>
